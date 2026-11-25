@@ -4,7 +4,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader, Button, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Pill, Row, Screen } from '@/components/ui';
-import { OfficialWeek, SemesterEnded, TermBanner, termPhase, useTimetable, weeklyHours } from '@/components/official-schedule';
+import { OfficialWeek, SemesterEnded, TermBanner, termPhase, useTimetable, WeekPlanner, weeklyHours } from '@/components/official-schedule';
 import { colors } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { deleteOp, fetchSchedules, type Schedule } from '@/lib/data';
@@ -81,7 +81,23 @@ export default function InstructorSchedule() {
         {timetable.loading && !timetable.data ? <Loading /> : null}
         {timetable.data && termPhase(timetable.data.term) === 'ended' ? <SemesterEnded term={timetable.data.term} /> : null}
         {timetable.data && termPhase(timetable.data.term) !== 'ended' ? (
-          <OfficialWeek classes={official} viewer="instructor" emptyBody="When an administrator assigns you to a subject and section, it appears here." />
+          official.length || data?.length ? (
+            <>
+              <WeekPlanner
+                classes={official}
+                term={timetable.data.term}
+                extras={(data ?? []).map((s) => ({
+                  ...s,
+                  title: s.class ? `${s.class.code} · ${s.class.title}` : 'Extra meeting',
+                  section: s.class?.section,
+                }))}
+              />
+              <Label>Every week</Label>
+              <OfficialWeek classes={official} viewer="instructor" emptyBody="When an administrator assigns you to a subject and section, it appears here." />
+            </>
+          ) : (
+            <OfficialWeek classes={official} viewer="instructor" emptyBody="When an administrator assigns you to a subject and section, it appears here." />
+          )
         ) : null}
         <Card tone="soft" style={{ gap: 4 }}>
           <Row style={{ gap: 8 }}>

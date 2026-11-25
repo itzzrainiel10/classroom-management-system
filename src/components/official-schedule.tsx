@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Caption, Card, Empty, H2, Label, Row } from '@/components/ui';
 import { colors, radius } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchMyTimetable, type OfficialClass, type Term } from '@/lib/data';
-import { DAYS, fmtTime } from '@/lib/format';
+import { DAY_SHORT, DAYS, fmtTime } from '@/lib/format';
 
 const localDay = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
@@ -112,6 +113,118 @@ export function OfficialWeek({ classes, viewer, emptyBody }: { classes: Official
   );
 }
 
+/* ---------- Week planner: one real calendar week at a time ---------- */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const mondayOf = (d: Date) => {
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+  return day;
+};
+const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+const md = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+export type ExtraMeeting = { id: string; day_of_week: number; start_time: string; end_time: string; room: string; title: string; section?: string };
+type Slot = { key: string; start: string; end: string; title: string; sub: string; extra: boolean };
+
+/** Calendar week view: pick a week and a day, see that day's classes (official + extra meetings). */
+export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialClass[]; extras?: ExtraMeeting[]; term: Term | null | undefined }) {
+  const today = new Date();
+  const [offset, setOffset] = useState(0);
+  const [picked, setPicked] = useState((today.getDay() + 6) % 7);
+
+  const monday = addDays(mondayOf(today), offset * 7);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+
+  const slotsFor = (i: number): Slot[] => {
+    if (!inSession(term, days[i])) return [];
+    const dow = i + 1;
+    return [
+      ...classes
+        .filter((c) => c.day_of_week === dow)
+        .map((c) => ({ key: c.id, start: c.start_time, end: c.end_time, title: `${c.subject_code} · ${c.subject_name}`, sub: `${c.section_name} · ${c.room}`, extra: false })),
+      ...extras
+        .filter((e) => e.day_of_week === dow)
+        .map((e) => ({ key: `x${e.id}`, start: e.start_time, end: e.end_time, title: e.title, sub: [e.section && `Section ${e.section}`, e.room].filter(Boolean).join(' · '), extra: true })),
+    ].sort((a, b) => a.start.localeCompare(b.start));
+  };
+  const weekSlots = days.map((_, i) => slotsFor(i));
+  const total = weekSlots.reduce((n, s) => n + s.length, 0);
+  const daySlots = weekSlots[picked];
+
+  const label = offset === 0 ? 'This week' : offset === 1 ? 'Next week' : offset === -1 ? 'Last week' : `${md(monday)} week`;
+  const semWeek =
+    term?.semester_start && inSession(term, addDays(monday, 6)) && termPhase(term, monday) !== 'upcoming'
+      ? Math.floor((monday.getTime() - mondayOf(localDay(term.semester_start)).getTime()) / (7 * DAY_MS)) + 1
+      : null;
+
+  const go = (n: number) => {
+    setOffset(offset + n);
+    setPicked(0);
+  };
+  const goToday = () => {
+    setOffset(0);
+    setPicked((today.getDay() + 6) % 7);
+  };
+
+  return (
+    <Card style={{ gap: 12 }}>
+      <Row>
+        <Pressable onPress={() => go(-1)} hitSlop={10} accessibilityLabel="Previous week" style={styles.navBtn}>
+          <Ionicons name="chevron-back" size={18} color={colors.primary} />
+        </Pressable>
+        <Pressable onPress={goToday} style={{ flex: 1, alignItems: 'center' }} accessibilityLabel="Go to this week">
+          <H2>{label}</H2>
+          <Caption>
+            {md(days[0])} – {md(days[6])}
+            {semWeek ? ` · Week ${semWeek}` : ''} · {total} {total === 1 ? 'class' : 'classes'}
+          </Caption>
+        </Pressable>
+        <Pressable onPress={() => go(1)} hitSlop={10} accessibilityLabel="Next week" style={styles.navBtn}>
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+        </Pressable>
+      </Row>
+
+      <View style={styles.strip}>
+        {days.map((d, i) => {
+          const on = i === picked;
+          const isToday = sameDay(d, today);
+          return (
+            <Pressable key={i} onPress={() => setPicked(i)} style={[styles.day, on && styles.dayOn]} accessibilityLabel={`${DAYS[i]} ${md(d)}`}>
+              <Text style={[styles.dayName, on && { color: colors.onPrimary }]}>{DAY_SHORT[i]}</Text>
+              <Text style={[styles.dayNum, on && { color: colors.onPrimary }, !on && isToday && { color: colors.primary }]}>{d.getDate()}</Text>
+              <View style={[styles.dot, !weekSlots[i].length && { opacity: 0 }, on && { backgroundColor: colors.gold }]} />
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Label>
+        {DAYS[picked]}, {md(days[picked])}
+        {sameDay(days[picked], today) ? ' · Today' : ''}
+      </Label>
+      {daySlots.length === 0 ? (
+        <Caption>{inSession(term, days[picked]) ? 'No classes on this day.' : 'No classes — outside the semester dates.'}</Caption>
+      ) : (
+        daySlots.map((s) => (
+          <Row key={s.key} style={{ alignItems: 'flex-start' }}>
+            <View style={[styles.bar, s.extra && { backgroundColor: colors.gold }]} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Caption style={{ fontWeight: '800', color: colors.primary }}>
+                {fmtTime(s.start)}–{fmtTime(s.end)}
+                {s.extra ? '  · Extra meeting' : ''}
+              </Caption>
+              <H2>{s.title}</H2>
+              {s.sub ? <Caption>{s.sub}</Caption> : null}
+            </View>
+          </Row>
+        ))
+      )}
+    </Card>
+  );
+}
+
 /** Weekly teaching hours for a list of classes. */
 export function weeklyHours(classes: OfficialClass[]) {
   const mins = classes.reduce((n, c) => {
@@ -127,4 +240,11 @@ const styles = StyleSheet.create({
   termText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   termDates: { color: colors.textSoft, fontSize: 12, marginTop: 1 },
   bar: { width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.primary },
+  navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  strip: { flexDirection: 'row', gap: 4 },
+  day: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: radius.md, gap: 2 },
+  dayOn: { backgroundColor: colors.primary },
+  dayName: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: colors.muted },
+  dayNum: { fontSize: 16, fontWeight: '800', color: colors.text },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
 });
