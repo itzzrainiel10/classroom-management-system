@@ -7,6 +7,8 @@ import { Loading } from './components/ui';
 import { InstructorLayout } from './layouts/InstructorLayout';
 import Attendance from './pages/Attendance';
 import MyClasses from './pages/MyClasses';
+import Omr from './pages/Omr';
+import OmrPrint from './pages/OmrPrint';
 import { ResetPassword, SignIn } from './pages/Auth';
 import {
   InstructorClassSchedule,
@@ -51,6 +53,14 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login" element={<SignIn />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route
+            path="/omr/print/:quizId"
+            element={
+              <RequireInstructor>
+                <OmrPrint />
+              </RequireInstructor>
+            }
+          />
+          <Route
             element={
               <RequireInstructor>
                 <InstructorLayout />
@@ -68,6 +78,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/announcements" element={<InstructorAnnouncements />} />
             <Route path="/classes" element={<MyClasses />} />
             <Route path="/attendance" element={<Attendance />} />
+            <Route path="/omr" element={<Omr />} />
             <Route path="/results" element={<InstructorResults />} />
             <Route path="/results/:id" element={<InstructorQuizResults />} />
             <Route path="/notifications" element={<InstructorNotifications />} />

@@ -14,6 +14,9 @@ export default function InstructorLayout() {
       <Stack.Screen name="announcement" options={{ title: 'Announcements' }} />
       <Stack.Screen name="schedule-new" options={{ title: 'Extra class meeting' }} />
       <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
+      <Stack.Screen name="omr/index" options={{ title: 'OMR Scanner' }} />
+      <Stack.Screen name="omr/camera" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="omr/review/[id]" options={{ title: 'Review answer sheet' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
       <Stack.Screen name="grade/[id]" options={{ title: 'Grade answers' }} />
     </Stack>

@@ -20,6 +20,7 @@
   "exclude": [
     "node_modules",
     "admin-web",
-    "instructor-web"
+    "instructor-web",
+    "supabase/functions"
   ]
 }

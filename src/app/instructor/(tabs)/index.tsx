@@ -11,7 +11,6 @@ import { colors, radius, shadow } from '@/constants/theme';
 import { useClasses } from '@/hooks/use-classes';
 import { useAuth } from '@/lib/auth';
 import { firstName, fmtToday, greetingFor } from '@/lib/format';
-import { OMR_STATUS } from '@/lib/omr';
 
 export default function InstructorHome() {
   const { fullName, signOut } = useAuth();
@@ -76,16 +75,8 @@ export default function InstructorHome() {
           <MenuRow icon="checkmark-done" title="Attendance" body="Mark students present or absent." onPress={() => router.push('/instructor/attendance')} />
           <MenuRow icon="bar-chart" title="Monitor Results" body="Review scores and completion." onPress={() => router.push('/instructor/results')} />
           <MenuRow icon="people" title="Manage classes" body="Students, activities & settings." onPress={() => router.push('/instructor/classes')} />
+          <MenuRow icon="scan" title="OMR Scanner" body="Grade paper answer sheets with the camera." onPress={() => router.push('/instructor/omr')} />
         </View>
-
-        <Card tone="soft" style={{ gap: 4 }}>
-          <Text style={{ fontWeight: '800', color: colors.primary }}>Paper answer sheets (OMR)</Text>
-          <Text style={{ color: colors.textSoft, fontSize: 13 }}>
-            {OMR_STATUS === 'planned'
-              ? 'Planned — not available yet. Students currently answer quizzes in the app and scores are computed automatically.'
-              : 'Available'}
-          </Text>
-        </Card>
       </Screen>
     </SafeAreaView>
   );

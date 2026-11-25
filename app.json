@@ -37,7 +37,14 @@
           "imageWidth": 180
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CvSU CMS uses the camera to scan paper answer sheets (OMR).",
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

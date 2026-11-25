@@ -8,6 +8,7 @@ import { classLabel, classStats, fetchActivity, nameOf, useData } from '../servi
 import { downloadCsv, fmtNum, fmtPct, pct, semesterLabel } from '../services/format';
 import { RANGES, sinceOf, type RangeKey } from './Activity';
 import { AttendanceReport } from './AttendanceReport';
+import { OmrReport } from './OmrReport';
 
 export default function Reports() {
   const { w } = useWorkspace();
@@ -145,6 +146,7 @@ export default function Reports() {
         </div>
       </div>
       <AttendanceReport classes={classes} since={since} />
+      <OmrReport classes={classes} since={since} />
       {done ? <Success title="Report prepared" body="Your class report has been downloaded as a CSV file you can open in Excel or Google Sheets." onDone={() => setDone(false)} /> : null}
     </>
   );

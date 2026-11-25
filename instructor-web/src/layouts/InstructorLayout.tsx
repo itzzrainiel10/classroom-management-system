@@ -29,6 +29,7 @@ const NAV: { to: string; label: string; icon: IconName; group: string }[] = [
   { to: '/assignments', label: 'Assignments', icon: 'edit', group: 'Classwork' },
   { to: '/announcements', label: 'Announcements', icon: 'megaphone', group: 'Classwork' },
   { to: '/attendance', label: 'Attendance', icon: 'checkCircle', group: 'Classwork' },
+  { to: '/omr', label: 'OMR Management', icon: 'clipboard', group: 'Classwork' },
   { to: '/results', label: 'Monitor Results', icon: 'chart', group: 'Classwork' },
 ];
 
