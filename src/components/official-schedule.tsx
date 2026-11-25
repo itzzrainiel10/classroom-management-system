@@ -129,7 +129,17 @@ export type ExtraMeeting = { id: string; day_of_week: number; start_time: string
 type Slot = { key: string; start: string; end: string; title: string; sub: string; extra: boolean };
 
 /** Calendar week view: pick a week and a day, see that day's classes (official + extra meetings). */
-export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialClass[]; extras?: ExtraMeeting[]; term: Term | null | undefined }) {
+export function WeekPlanner({
+  classes,
+  extras = [],
+  term,
+  viewer = 'instructor',
+}: {
+  classes: OfficialClass[];
+  extras?: ExtraMeeting[];
+  term: Term | null | undefined;
+  viewer?: 'student' | 'instructor';
+}) {
   const today = new Date();
   const [offset, setOffset] = useState(0);
   const [picked, setPicked] = useState((today.getDay() + 6) % 7);
@@ -143,7 +153,7 @@ export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialC
     return [
       ...classes
         .filter((c) => c.day_of_week === dow)
-        .map((c) => ({ key: c.id, start: c.start_time, end: c.end_time, title: `${c.subject_code} · ${c.subject_name}`, sub: `${c.section_name} · ${c.room}`, extra: false })),
+        .map((c) => ({ key: c.id, start: c.start_time, end: c.end_time, title: `${c.subject_code} · ${c.subject_name}`, sub: viewer === 'student' ? `${c.room} · ${c.instructor_name}` : `${c.section_name} · ${c.room}`, extra: false })),
       ...extras
         .filter((e) => e.day_of_week === dow)
         .map((e) => ({ key: `x${e.id}`, start: e.start_time, end: e.end_time, title: e.title, sub: [e.section && `Section ${e.section}`, e.room].filter(Boolean).join(' · '), extra: true })),
@@ -225,34 +235,44 @@ export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialC
   );
 }
 
-/** Compact weekly timetable as a table: Day · Time · Subject · Section · Room (like the admin website). */
-export function ScheduleTable({ classes, emptyBody }: { classes: OfficialClass[]; emptyBody: string }) {
+/**
+ * Compact weekly timetable as a table (like the admin website).
+ * Instructor: Section · Day · Time · Subject · Room, grouped by section.
+ * Student:    Day · Time · Subject · Room · Instructor, grouped by day (it is always their own section).
+ */
+export function ScheduleTable({ classes, emptyBody, viewer = 'instructor' }: { classes: OfficialClass[]; emptyBody: string; viewer?: 'student' | 'instructor' }) {
   if (!classes.length) return <Empty icon="calendar-outline" title="No official classes yet" body={emptyBody} />;
-  // Grouped by section first, then day and time.
-  const rows = [...classes].sort(
-    (a, b) => a.section_name.localeCompare(b.section_name) || a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time),
+  const student = viewer === 'student';
+  const rows = [...classes].sort((a, b) =>
+    student
+      ? a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time)
+      : a.section_name.localeCompare(b.section_name) || a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time),
   );
   const short = (t: string) => fmtTime(t).replace(' AM', 'a').replace(' PM', 'p');
   let group = -1;
   return (
     <View style={styles.table}>
       <View style={[styles.tr, styles.thead]}>
-        <Text style={[styles.th, styles.cSec]}>Section</Text>
+        {student ? null : <Text style={[styles.th, styles.cSec]}>Section</Text>}
         <Text style={[styles.th, styles.cDay]}>Day</Text>
         <Text style={[styles.th, styles.cTime]}>Time</Text>
         <Text style={[styles.th, styles.cSubj]}>Subject</Text>
         <Text style={[styles.th, styles.cRoom]}>Room</Text>
+        {student ? <Text style={[styles.th, styles.cSec]}>Instructor</Text> : null}
       </View>
       {rows.map((c, i) => {
-        const newSection = i === 0 || rows[i - 1].section_name !== c.section_name;
-        if (newSection) group++;
-        const newDay = newSection || rows[i - 1].day_of_week !== c.day_of_week;
+        const newSection = !student && (i === 0 || rows[i - 1].section_name !== c.section_name);
+        const newDay = i === 0 || newSection || rows[i - 1].day_of_week !== c.day_of_week;
+        const newGroup = student ? newDay : newSection;
+        if (newGroup) group++;
         return (
-          <View key={c.id} style={[styles.tr, newSection && i > 0 && styles.dayBreak, group % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
-            <Text style={[styles.td, styles.cSec, { fontWeight: '700', color: colors.text }]} numberOfLines={2}>
-              {newSection ? c.section_name : ''}
-            </Text>
-            <Text style={[styles.td, styles.cDay]}>{newDay ? DAY_SHORT[c.day_of_week - 1] : ''}</Text>
+          <View key={c.id} style={[styles.tr, newGroup && i > 0 && styles.dayBreak, group % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
+            {student ? null : (
+              <Text style={[styles.td, styles.cSec, { fontWeight: '700', color: colors.text }]} numberOfLines={2}>
+                {newSection ? c.section_name : ''}
+              </Text>
+            )}
+            <Text style={[styles.td, styles.cDay, student && { fontWeight: '700', color: colors.text }]}>{newDay ? DAY_SHORT[c.day_of_week - 1] : ''}</Text>
             <Text style={[styles.td, styles.cTime]}>
               {short(c.start_time)}–{short(c.end_time)}
             </Text>
@@ -265,6 +285,11 @@ export function ScheduleTable({ classes, emptyBody }: { classes: OfficialClass[]
             <Text style={[styles.td, styles.cRoom]} numberOfLines={2}>
               {c.room}
             </Text>
+            {student ? (
+              <Text style={[styles.td, styles.cSec]} numberOfLines={2}>
+                {c.instructor_name}
+              </Text>
+            ) : null}
           </View>
         );
       })}

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Row, Screen, Segmented } from '@/components/ui';
 import { colors, radius } from '@/constants/theme';
 import { ChooseSectionCard } from '@/components/section-picker';
-import { OfficialClassCard, SemesterEnded, TermBanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
+import { OfficialClassCard, ScheduleTable, SemesterEnded, TermBanner, WeekPlanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
 import { useStudentHome } from '@/hooks/use-student';
 import type { Term } from '@/lib/data';
 import { DAY_SHORT, fmtTime, isoWeekday } from '@/lib/format';
@@ -130,9 +130,6 @@ export default function StudentSchedule() {
     return (p === 'unset' || p === 'ongoing') && classesOn(d, term, officialDays, extraDays) > 0;
   };
 
-  const first = days[0];
-  const last = days[4];
-  const range = `${first.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}–${last.getDate()}, ${last.getFullYear()}`;
   const day = isoWeekday(selected);
   const ended = termPhase(term) === 'ended';
   // Before the first day the timetable is shown as a preview; after the last day nothing is listed.
@@ -145,7 +142,7 @@ export default function StudentSchedule() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <Screen onRefresh={refresh}>
-        <AppHeader crumb="Student" title="Schedule" subtitle={view === 'week' ? `Your week at a glance · ${range}` : 'Your classes month by month'} />
+        <AppHeader crumb="Student" title="Schedule" subtitle={view === 'week' ? 'Your classes week by week' : 'Your classes month by month'} />
         <OfflineNote show={offline || timetable.offline} savedAt={savedAt ?? timetable.savedAt} />
         <TermBanner term={term} extra={section ? section.name : 'No section yet'} />
         {timetable.data && !section ? <ChooseSectionCard onChosen={refresh} /> : null}
@@ -163,63 +160,68 @@ export default function StudentSchedule() {
           }}
         />
 
-        {view === 'week' ? (
-          <View style={styles.week}>
-            {days.map((d, i) => {
-              const active = sameDay(d, selected);
-              return (
-                <Pressable key={i} onPress={() => setSelected(d)} style={[styles.day, active && styles.dayActive]}>
-                  <Text style={[styles.dayShort, active && { color: colors.gold }]}>{DAY_SHORT[i]}</Text>
-                  <Text style={[styles.dayNum, active && { color: colors.onPrimary }]}>{d.getDate()}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : (
-          <MonthCalendar selected={selected} onSelect={setSelected} hasClasses={hasClasses} />
-        )}
-
-        <Label>
-          {selected.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          {sameDay(selected, today) ? ' · Today' : ''}
-        </Label>
         {(loading && !data) || (timetable.loading && !timetable.data) ? <Loading /> : null}
         {ended ? <SemesterEnded term={term} /> : null}
-        {data && timetable.data && !ended && items.length === 0 && official.length === 0 ? (
-          <Empty icon="sunny-outline" title="No classes" body={outside ? 'This date is outside the semester.' : 'Nothing scheduled on this day.'} />
+
+        {view === 'week' ? (
+          !ended && timetable.data ? (
+            <WeekPlanner
+              classes={allOfficial}
+              term={term}
+              viewer="student"
+              extras={allExtra.map((x) => ({
+                ...x,
+                title: x.class ? `${x.class.code} · ${x.class.title}` : 'Class meeting',
+                section: x.class?.section,
+              }))}
+            />
+          ) : null
+        ) : (
+          <>
+            <MonthCalendar selected={selected} onSelect={setSelected} hasClasses={hasClasses} />
+            <Label>
+              {selected.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {sameDay(selected, today) ? ' · Today' : ''}
+            </Label>
+            {data && timetable.data && !ended && items.length === 0 && official.length === 0 ? (
+              <Empty icon="sunny-outline" title="No classes" body={outside ? 'This date is outside the semester.' : 'Nothing scheduled on this day.'} />
+            ) : null}
+            {official.map((c) => (
+              <OfficialClassCard key={c.id} c={c} viewer="student" />
+            ))}
+            {items.length ? <Label>Other class meetings</Label> : null}
+            {items.map((x) => (
+              <Card key={x.id}>
+                <Row>
+                  <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.gold }} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Caption style={{ fontWeight: '800', color: colors.primary }}>
+                      {fmtTime(x.start_time)}–{fmtTime(x.end_time)}
+                    </Caption>
+                    <H2>{x.class ? `${x.class.code} · ${x.class.title}` : 'Class'}</H2>
+                    <Caption>
+                      Section {x.class?.section}
+                      {x.room ? ` · ${x.room}` : ''}
+                    </Caption>
+                  </View>
+                </Row>
+              </Card>
+            ))}
+          </>
+        )}
+
+        {!ended && timetable.data && section ? (
+          <>
+            <Label>Every week</Label>
+            <ScheduleTable classes={allOfficial} viewer="student" emptyBody="Your section’s official classes appear here once the administrator schedules them." />
+          </>
         ) : null}
-        {official.map((c) => (
-          <OfficialClassCard key={c.id} c={c} viewer="student" />
-        ))}
-        {items.length ? <Label>Other class meetings</Label> : null}
-        {items.map((s) => (
-          <Card key={s.id}>
-            <Row>
-              <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.gold }} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Caption style={{ fontWeight: '800', color: colors.primary }}>
-                  {fmtTime(s.start_time)}–{fmtTime(s.end_time)}
-                </Caption>
-                <H2>{s.class ? `${s.class.code} · ${s.class.title}` : 'Class'}</H2>
-                <Caption>
-                  Section {s.class?.section}
-                  {s.room ? ` · ${s.room}` : ''}
-                </Caption>
-              </View>
-            </Row>
-          </Card>
-        ))}
       </Screen>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  week: { flexDirection: 'row', gap: 8 },
-  day: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, gap: 2 },
-  dayActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dayShort: { fontSize: 11, fontWeight: '800', color: colors.muted, letterSpacing: 0.8 },
-  dayNum: { fontSize: 18, fontWeight: '800', color: colors.text },
   navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   gridRow: { flexDirection: 'row' },
   gridHead: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: colors.muted, paddingBottom: 2 },

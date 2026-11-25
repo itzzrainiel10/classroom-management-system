@@ -10,10 +10,11 @@ function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="auth">
       <header className="auth-top">
-        <img src="/seal.png" alt="Cavite State University seal" />
-        <div>
+        <div className="auth-brand">
+          <img src="/seal.png" alt="Cavite State University seal" />
           <b>Cavite State University</b>
-          <small>Classroom Management System · Administrator</small>
+          <small>Classroom Management System</small>
+          <span className="auth-tag">Administrator</span>
         </div>
       </header>
       <section className="auth-panel">{children}</section>
