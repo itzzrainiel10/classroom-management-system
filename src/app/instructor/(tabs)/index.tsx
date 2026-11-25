@@ -39,7 +39,7 @@ export default function InstructorHome() {
             {greetingFor()}
             {fullName ? `, ${firstName(fullName)}` : ''}!
           </OnPrimary>
-          <OnPrimary>{fmtToday()} · Here’s what’s happening today.</OnPrimary>
+          <OnPrimary>{fmtToday()} </OnPrimary>
           <View style={styles.stats}>
             <Stat n={classes.length} label="Classes" />
             <View style={styles.divider} />
@@ -52,13 +52,12 @@ export default function InstructorHome() {
         <OfflineNote show={offline} savedAt={savedAt} />
         <UploadStatus />
 
-        <Card style={{ gap: 10 }}>
+        <Card style={{ gap: 8 }}>
           <Label>Teaching load</Label>
           <TermBanner term={timetable.data?.term} />
           {official.length ? (
             <>
               <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
-                {subjects} subject{subjects === 1 ? '' : 's'} · {sections.length} section{sections.length === 1 ? '' : 's'} · {weeklyHours(official)} hours/week
               </Text>
               <Text style={{ color: colors.textSoft, fontSize: 13 }}>{sections.join(', ')}</Text>
             </>
