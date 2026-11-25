@@ -4,7 +4,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader, Button, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Pill, Row, Screen } from '@/components/ui';
-import { OfficialWeek, SemesterEnded, TermBanner, termPhase, useTimetable, WeekPlanner, weeklyHours } from '@/components/official-schedule';
+import { ScheduleTable, SemesterEnded, TermBanner, termPhase, useTimetable, WeekPlanner, weeklyHours } from '@/components/official-schedule';
 import { colors } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { deleteOp, fetchSchedules, type Schedule } from '@/lib/data';
@@ -93,10 +93,10 @@ export default function InstructorSchedule() {
                 }))}
               />
               <Label>Every week</Label>
-              <OfficialWeek classes={official} viewer="instructor" emptyBody="When an administrator assigns you to a subject and section, it appears here." />
+              <ScheduleTable classes={official} emptyBody="When an administrator assigns you to a subject and section, it appears here." />
             </>
           ) : (
-            <OfficialWeek classes={official} viewer="instructor" emptyBody="When an administrator assigns you to a subject and section, it appears here." />
+            <ScheduleTable classes={official} emptyBody="When an administrator assigns you to a subject and section, it appears here." />
           )
         ) : null}
         <Card tone="soft" style={{ gap: 4 }}>

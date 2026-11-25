@@ -225,6 +225,48 @@ export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialC
   );
 }
 
+/** Compact weekly timetable as a table: Day · Time · Subject · Section · Room (like the admin website). */
+export function ScheduleTable({ classes, emptyBody }: { classes: OfficialClass[]; emptyBody: string }) {
+  if (!classes.length) return <Empty icon="calendar-outline" title="No official classes yet" body={emptyBody} />;
+  const rows = [...classes].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
+  const short = (t: string) => fmtTime(t).replace(' AM', 'a').replace(' PM', 'p');
+  return (
+    <View style={styles.table}>
+      <View style={[styles.tr, styles.thead]}>
+        <Text style={[styles.th, styles.cDay]}>Day</Text>
+        <Text style={[styles.th, styles.cTime]}>Time</Text>
+        <Text style={[styles.th, styles.cSubj]}>Subject</Text>
+        <Text style={[styles.th, styles.cSec]}>Section</Text>
+        <Text style={[styles.th, styles.cRoom]}>Room</Text>
+      </View>
+      {rows.map((c, i) => {
+        const newDay = i === 0 || rows[i - 1].day_of_week !== c.day_of_week;
+        const dayIdx = c.day_of_week - 1;
+        return (
+          <View key={c.id} style={[styles.tr, newDay && i > 0 && styles.dayBreak, dayIdx % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
+            <Text style={[styles.td, styles.cDay, { fontWeight: '700' }]}>{newDay ? DAY_SHORT[dayIdx] : ''}</Text>
+            <Text style={[styles.td, styles.cTime]}>
+              {short(c.start_time)}–{short(c.end_time)}
+            </Text>
+            <View style={styles.cSubj}>
+              <Text style={[styles.td, { fontWeight: '700', color: colors.text }]}>{c.subject_code}</Text>
+              <Text style={styles.tdSmall} numberOfLines={1}>
+                {c.subject_name}
+              </Text>
+            </View>
+            <Text style={[styles.td, styles.cSec]} numberOfLines={2}>
+              {c.section_name}
+            </Text>
+            <Text style={[styles.td, styles.cRoom]} numberOfLines={2}>
+              {c.room}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Weekly teaching hours for a list of classes. */
 export function weeklyHours(classes: OfficialClass[]) {
   const mins = classes.reduce((n, c) => {
@@ -247,4 +289,16 @@ const styles = StyleSheet.create({
   dayName: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: colors.muted },
   dayNum: { fontSize: 16, fontWeight: '800', color: colors.text },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
+  table: { backgroundColor: colors.card, borderWidth: 1, borderColor: '#D5DDD7', borderRadius: 6, overflow: 'hidden' },
+  tr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 7, gap: 4 },
+  thead: { backgroundColor: '#EEF2EF', borderBottomWidth: 1, borderBottomColor: '#D5DDD7', paddingVertical: 6 },
+  dayBreak: { borderTopWidth: 1, borderTopColor: colors.line },
+  th: { fontSize: 10.5, fontWeight: '700', color: colors.textSoft },
+  td: { fontSize: 11, color: colors.textSoft },
+  tdSmall: { fontSize: 10, color: colors.muted },
+  cDay: { width: 30 },
+  cTime: { width: 66 },
+  cSubj: { flex: 1.3 },
+  cSec: { flex: 1 },
+  cRoom: { flex: 1 },
 });
