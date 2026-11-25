@@ -1,0 +1,59 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { Bell } from '@/components/notifications';
+import { colors } from '@/constants/theme';
+
+const SEAL = require('../../assets/images/splash-icon.png');
+
+/** Decorative layer for green headers: soft rings + a faint university seal. Place first inside the green container. */
+export function HeroBackdrop({ sealSize = 220 }: { sealSize?: number }) {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View style={[styles.ring, { width: 320, height: 320, top: -160, right: -110 }]} />
+      <View style={[styles.ring, { width: 200, height: 200, bottom: -120, left: -70 }]} />
+      {sealSize > 0 ? <Image source={SEAL} style={[styles.watermark, { width: sealSize, height: sealSize, right: -sealSize * 0.28, top: 18 }]} resizeMode="contain" /> : null}
+    </View>
+  );
+}
+
+/** Top row of a dashboard header: small seal + "CvSU · ROLE" on the left, a round log-out button on the right. */
+export function HeroTopBar({ role, onSignOut, onBell }: { role: string; onSignOut: () => void; onBell?: () => void }) {
+  return (
+    <View style={styles.top}>
+      <View style={styles.brand}>
+        <Image source={SEAL} style={styles.brandSeal} resizeMode="contain" />
+        <View>
+          <Text style={styles.brandName}>CvSU CMS</Text>
+          <Text style={styles.brandRole}>{role.toUpperCase()}</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {onBell ? <Bell onPress={onBell} /> : null}
+        <Pressable onPress={onSignOut} hitSlop={8} accessibilityLabel="Log out" style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}>
+          <Ionicons name="log-out-outline" size={20} color={colors.onPrimary} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  ring: { position: 'absolute', borderRadius: 999, borderWidth: 28, borderColor: 'rgba(255,255,255,0.05)' },
+  watermark: { position: 'absolute', opacity: 0.07 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandSeal: { width: 34, height: 34 },
+  brandName: { color: colors.onPrimary, fontWeight: '800', fontSize: 14, letterSpacing: 0.2 },
+  brandRole: { color: colors.gold, fontWeight: '800', fontSize: 10, letterSpacing: 1.4 },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
