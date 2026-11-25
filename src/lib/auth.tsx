@@ -256,6 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) return error.message;
+      // Email confirmation is off: sign-up returns a session and the user goes straight in.
       if (data.session) return null;
       return newRole === 'instructor'
         ? 'Application created! Confirm your email, then log in as Instructor to upload proof and follow its status. An administrator must approve it first.'

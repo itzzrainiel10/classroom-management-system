@@ -18,17 +18,17 @@ export function useWorkspace() {
 
 type NavItem = { to: string; label: string; icon: IconName; group: string };
 const NAV: NavItem[] = [
-  { to: '/overview', label: 'Dashboard', icon: 'home', group: 'MANAGE' },
-  { to: '/users', label: 'User Management', icon: 'users', group: 'MANAGE' },
-  { to: '/verification', label: 'Instructor Verification', icon: 'shield', group: 'MANAGE' },
-  { to: '/instructors', label: 'Instructor Management', icon: 'school', group: 'MANAGE' },
-  { to: '/subjects', label: 'Subject Management', icon: 'book', group: 'ACADEMICS' },
-  { to: '/sections', label: 'Section Management', icon: 'users', group: 'ACADEMICS' },
-  { to: '/schedules', label: 'Schedule Management', icon: 'calendar', group: 'ACADEMICS' },
-  { to: '/classes', label: 'Classes & enrollment', icon: 'edit', group: 'ACADEMICS' },
-  { to: '/reports', label: 'Reports', icon: 'chart', group: 'INSIGHTS' },
-  { to: '/activity', label: 'Activity log', icon: 'activity', group: 'INSIGHTS' },
-  { to: '/settings', label: 'Settings', icon: 'clock', group: 'SYSTEM' },
+  { to: '/overview', label: 'Dashboard', icon: 'home', group: '' },
+  { to: '/users', label: 'Users', icon: 'users', group: 'People' },
+  { to: '/verification', label: 'Instructor applications', icon: 'shield', group: 'People' },
+  { to: '/instructors', label: 'Instructors', icon: 'school', group: 'People' },
+  { to: '/subjects', label: 'Subjects', icon: 'book', group: 'Academics' },
+  { to: '/sections', label: 'Sections', icon: 'users', group: 'Academics' },
+  { to: '/schedules', label: 'Schedules', icon: 'calendar', group: 'Academics' },
+  { to: '/classes', label: 'Classes', icon: 'edit', group: 'Academics' },
+  { to: '/reports', label: 'Reports', icon: 'chart', group: 'Reports' },
+  { to: '/activity', label: 'Activity log', icon: 'activity', group: 'Reports' },
+  { to: '/settings', label: 'Settings', icon: 'clock', group: 'System' },
 ];
 
 export function Shell() {
@@ -43,6 +43,10 @@ export function Shell() {
   const badge: Record<string, number> = { '/verification': applicants };
 
   useEffect(() => setOpen(false), [location.pathname]);
+  // Browser tab shows which page is open (helps with several tabs and the back-button history).
+  useEffect(() => {
+    document.title = `${current} · CvSU CMS Admin`;
+  }, [current]);
 
   const search = (e: FormEvent) => {
     e.preventDefault();
@@ -55,13 +59,13 @@ export function Shell() {
         <div className="brand">
           <img src="/seal.png" alt="" />
           <div>
-            <b>CvSU / Classroom</b>
-            <small>ADMIN WORKSPACE</small>
+            <b>Cavite State University</b>
+            <small>Classroom Management System</small>
           </div>
         </div>
         {[...new Set(NAV.map((n) => n.group))].map((g) => (
           <div key={g} className="nav-group">
-            <div className="nav-label">{g}</div>
+            {g ? <div className="nav-label">{g}</div> : null}
             <nav className="nav">
               {NAV.filter((n) => n.group === g).map((n) => (
                 <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -73,15 +77,12 @@ export function Shell() {
             </nav>
           </div>
         ))}
-        <div className="side-note">
-          <b>One shared workspace</b>
-          Mobile and web use the same class records.
-        </div>
         <button className="side-out" onClick={() => void signOut()}>
           <Icon name="logout" size={17} />
           Sign out
         </button>
       </aside>
+      {open ? <div className="sidebar-backdrop" onClick={() => setOpen(false)} aria-hidden /> : null}
 
       <div className="main">
         <header className="topbar">
@@ -89,7 +90,7 @@ export function Shell() {
             <Icon name="menu" />
           </button>
           <div className="crumbs">
-            Workspace&nbsp;&nbsp;/&nbsp;&nbsp;<b>{current}</b>
+            <b>{current}</b>
           </div>
           <form className="search" onSubmit={search} role="search">
             <Icon name="search" size={16} />
@@ -98,7 +99,7 @@ export function Shell() {
           <div className="me">
             <div className="who">
               <b>{name || 'Administrator'}</b>
-              <small>System administrator</small>
+              <small>Administrator</small>
             </div>
             <Avatar name={name || 'Admin'} />
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../components/Shell';
@@ -13,6 +13,7 @@ type Tab = 'all' | 'instructor' | 'student';
 export default function Users() {
   const { w, refresh } = useWorkspace();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('all');
   const [q, setQ] = useState(params.get('q') ?? '');
   const [page, setPage] = useState(0);
@@ -34,8 +35,8 @@ export default function Users() {
   return (
     <>
       <PageHeader
-        title="Users & roles"
-        subtitle="Control access for instructors and students."
+        title="Users"
+        subtitle="Everyone with an account. Click a person to edit their details."
         actions={
           <button className="btn btn-primary" onClick={() => setInviting(true)}>
             <Icon name="plus" size={16} /> Add user
@@ -80,7 +81,13 @@ export default function Users() {
               </thead>
               <tbody>
                 {shown.map((u) => (
-                  <tr key={u.email}>
+                  <tr
+                    key={u.email}
+                    className={u.id ? 'clickable' : undefined}
+                    onClick={(e) => {
+                      // whole row opens the user; buttons/links inside keep their own action
+                      if (u.id && !(e.target as HTMLElement).closest('a, button')) navigate(`/users/${u.id}`);
+                    }}>
                     <td>
                       <Person name={u.name} sub={u.email} />
                     </td>

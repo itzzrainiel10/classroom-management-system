@@ -36,7 +36,7 @@ export default function Instructors() {
 
   return (
     <>
-      <PageHeader title="Instructor Management" subtitle={`Approved instructors and their teaching load · ${w.settings.current_semester}, AY ${w.settings.current_academic_year}`} />
+      <PageHeader title="Instructors" subtitle={`Approved instructors and their teaching load · ${w.settings.current_semester}, AY ${w.settings.current_academic_year}`} />
       <div className="grid grid-3">
         <Tile hero icon="school" label="Approved instructors" value={fmtNum(rows.length)} />
         <Tile icon="calendar" label="With classes this term" value={fmtNum(assigned)} sub={`${rows.length - assigned} without a schedule yet`} />
@@ -98,7 +98,7 @@ export default function Instructors() {
             </table>
           </div>
         ) : (
-          <Empty icon="school" title="No approved instructors" body="Approve applications in Instructor Verification first." />
+          <Empty icon="school" title="No approved instructors" body="Approve applications on the Instructor applications page first." />
         )}
       </div>
     </>

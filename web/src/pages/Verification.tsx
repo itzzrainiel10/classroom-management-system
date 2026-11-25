@@ -31,7 +31,7 @@ export default function Verification() {
 
   return (
     <>
-      <PageHeader title="Instructor Verification" subtitle="Confirm that each instructor applicant is a legitimate CvSU faculty member before they can teach." />
+      <PageHeader title="Instructor applications" subtitle="Confirm that each instructor applicant is a legitimate CvSU faculty member before they can teach." />
       <div className="card">
         <div className="card-head" style={{ flexWrap: 'wrap' }}>
           <div className="tabs" role="tablist">

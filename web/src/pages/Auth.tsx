@@ -9,25 +9,15 @@ import { supabase } from '../lib/supabase';
 function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="auth">
-      <section className="auth-hero">
-        <img className="seal" src="/seal.png" alt="Cavite State University seal" />
-        <div className="kicker">ADMINISTRATOR PORTAL</div>
-        <h1>Welcome, Admin!</h1>
-        <p>A centralized platform for managing instructors, their class assignments and teaching activities across your institution.</p>
-        <div className="steps">
-          <div>
-            <span>01</span> View instructor profiles and class assignments.
-          </div>
-          <div>
-            <span>02</span> Review quizzes and exams before students see them.
-          </div>
-          <div>
-            <span>03</span> Monitor activity and review reports across classes.
-          </div>
+      <header className="auth-top">
+        <img src="/seal.png" alt="Cavite State University seal" />
+        <div>
+          <b>Cavite State University</b>
+          <small>Classroom Management System · Administrator</small>
         </div>
-        <div className="foot">CAVITE STATE UNIVERSITY · TRUTH · EXCELLENCE · SERVICE</div>
-      </section>
+      </header>
       <section className="auth-panel">{children}</section>
+      <footer className="auth-foot">Truth · Excellence · Service</footer>
     </div>
   );
 }
@@ -42,15 +32,10 @@ export function Welcome() {
   return (
     <AuthLayout>
       <div className="auth-card">
-        <div className="eyebrow">CLASSROOM MANAGEMENT SYSTEM / ADMINISTRATOR</div>
-        <h2>Your instructor management portal.</h2>
-        <p className="lead">Monitor instructor activity, review class assignments and track teaching progress across your institution.</p>
-        <div className="note">
-          <Icon name="shield" />
-          <div>Only administrators can sign in here. Instructors and students use the CvSU CMS mobile app.</div>
-        </div>
+        <h2>Admin portal</h2>
+        <p className="lead">For administrators only. Instructors and students use the mobile app.</p>
         <Link className="btn btn-primary btn-block" to="/sign-in">
-          Continue to admin sign in <Icon name="arrowRight" size={16} />
+          Sign in
         </Link>
       </div>
     </AuthLayout>
@@ -100,7 +85,7 @@ export function SignIn() {
           <Icon name="arrowLeft" size={16} /> Back
         </Link>
         <h2>Admin sign in</h2>
-        <p className="lead">Sign in with your authorized CvSU administrator account.</p>
+        <p className="lead">Use your CvSU administrator account.</p>
         <Field label="University email">
           <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@cvsu.edu.ph" />
         </Field>

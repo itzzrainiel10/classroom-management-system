@@ -4,9 +4,8 @@ import { ColumnChart } from '../components/charts';
 import { Icon, type IconName } from '../components/icons';
 import { useWorkspace } from '../components/Shell';
 import { CardHead, Empty, PageHeader, Tile } from '../components/ui';
-import { useAuth } from '../lib/auth';
 import { fetchActivity, useData, userRows, type Activity } from '../lib/data';
-import { fmtNum, fmtTime, fmtToday, greeting, semesterRange, startOfDay } from '../lib/format';
+import { fmtNum, fmtTime, fmtToday, semesterRange, startOfDay } from '../lib/format';
 
 export const activityIcon = (a: Pick<Activity, 'category'>): IconName =>
   (({ assessment: 'clipboard', enrollment: 'users', class: 'book', assignment: 'edit', announcement: 'megaphone', schedule: 'calendar', user: 'user', sign_in: 'login' }) as Record<string, IconName>)[a.category] ?? 'activity';
@@ -15,7 +14,6 @@ const LEARNING = new Set(['assessment', 'assignment', 'announcement', 'schedule'
 
 export default function Overview() {
   const { w } = useWorkspace();
-  const { name } = useAuth();
   const weekStart = startOfDay(new Date(Date.now() - 6 * 86400000));
   const { data: activity } = useData(() => fetchActivity(weekStart.toISOString()), []);
 
@@ -38,8 +36,7 @@ export default function Overview() {
   return (
     <>
       <PageHeader
-        eyebrow="OVERVIEW"
-        title={`${greeting()}, ${name ? name.split(' ')[0] : 'Admin'}!`}
+        title="Dashboard"
         subtitle={`${fmtToday()} · ${w.settings.current_semester}, AY ${w.settings.current_academic_year} · ${semesterRange(w.settings.semester_start, w.settings.semester_end)}`}
         actions={
           <Link to="/reports" className="btn btn-secondary">
@@ -47,6 +44,21 @@ export default function Overview() {
           </Link>
         }
       />
+
+      {applicants ? (
+        <div className="note gold" style={{ alignItems: 'center' }}>
+          <Icon name="shield" />
+          <div style={{ flex: 1 }}>
+            <b>
+              {applicants} instructor application{applicants === 1 ? ' is' : 's are'} waiting for your review.
+            </b>{' '}
+            They can’t teach until you approve them.
+          </div>
+          <Link to="/verification" className="btn btn-primary btn-sm">
+            Review now
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid grid-4">
         <Tile hero icon="users" label="Total users" value={fmtNum(users.length)} sub={`${fmtNum(instructors)} instructors · ${fmtNum(students)} students`} />

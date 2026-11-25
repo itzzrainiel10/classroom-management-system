@@ -131,6 +131,14 @@ export default function SignIn() {
                   <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textSoft} />
                 </Pressable>
               </View>
+              {mode === 'in' ? (
+                <Pressable
+                  onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim() } })}
+                  hitSlop={8}
+                  style={{ alignSelf: 'flex-end', paddingTop: 2 }}>
+                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>Forgot password?</Text>
+                </Pressable>
+              ) : null}
             </View>
             {message ? (
               <View style={[styles.notice, message.ok ? styles.noticeOk : styles.noticeErr]}>

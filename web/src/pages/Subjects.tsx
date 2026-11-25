@@ -19,7 +19,7 @@ export default function Subjects() {
   return (
     <>
       <PageHeader
-        title="Subject Management"
+        title="Subjects"
         subtitle="Courses that can be scheduled for a section."
         actions={
           <button className="btn btn-primary" onClick={() => setEdit({ units: 3, department: '', description: '' })}>

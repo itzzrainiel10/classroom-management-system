@@ -1,0 +1,8 @@
+<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1D2A23;">
+  <h2 style="color: #075B39;">Reset your CvSU CMS password</h2>
+  <p>We received a request to reset the password for <strong>{{ .Email }}</strong>.</p>
+  <p><strong>In the mobile app</strong>, enter this code:</p>
+  <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #075B39; background: #E9F2EC; padding: 14px 20px; border-radius: 10px; text-align: center;">{{ .Token }}</p>
+  <p><strong>On the admin web portal</strong>, use this link instead:<br><a href="{{ .ConfirmationURL }}" style="color: #075B39;">Reset password</a></p>
+  <p style="color: #5F6F66; font-size: 13px;">The code expires in 1 hour. If you didn't ask to reset your password, you can ignore this email.</p>
+</div>

@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../components/Shell';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
-import { DAYS, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../lib/data';
+import { DAYS, ROOM_TYPES, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../lib/data';
 import { downloadCsv, fmtClock, minutesOf, semesterRange } from '../lib/format';
 
 const HOUR_PX = 52;
@@ -23,7 +23,7 @@ function describe(w: Workspace, s: OfficialSchedule) {
     subjectName: subject?.name ?? '—',
     section: section?.name ?? '—',
     year: section?.year_level ?? 0,
-    room: room?.name ?? '—',
+    room: room ? `${room.name}${room.room_type === 'laboratory' ? ' (Lab)' : ''}` : '—',
     time: `${fmtClock(s.start_time)}–${fmtClock(s.end_time)}`,
   };
 }
@@ -114,7 +114,7 @@ export default function Schedules() {
   return (
     <>
       <PageHeader
-        title="Schedule Management"
+        title="Schedules"
         subtitle="Official class schedules per section. Instructors and students see these in the mobile app."
         actions={
           <>
@@ -460,12 +460,19 @@ function ScheduleForm({ value, onClose, onSaved, onDelete }: { value: ScheduleIn
         </Field>
         <Field label="Room">
           <select className="select" value={v.room_id} onChange={(e) => set('room_id', e.target.value)}>
-            {w.rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-                {r.building ? ` · ${r.building}` : ''}
-              </option>
-            ))}
+            {ROOM_TYPES.map((t) => {
+              const list = w.rooms.filter((r) => (r.room_type ?? 'lecture') === t.value);
+              return list.length ? (
+                <optgroup key={t.value} label={t.plural}>
+                  {list.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                      {r.building ? ` · ${r.building}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null;
+            })}
           </select>
         </Field>
       </div>

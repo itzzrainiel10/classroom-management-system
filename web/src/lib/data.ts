@@ -22,7 +22,12 @@ export type InstructorProfile = {
 };
 export type Subject = { id: string; code: string; name: string; department: string; units: number; description: string };
 export type Section = { id: string; name: string; program: string; year_level: number; department: string };
-export type Room = { id: string; name: string; building: string; capacity: number | null };
+export type RoomType = 'lecture' | 'laboratory';
+export type Room = { id: string; name: string; building: string; capacity: number | null; room_type: RoomType };
+export const ROOM_TYPES: { value: RoomType; label: string; plural: string }[] = [
+  { value: 'lecture', label: 'Lecture room', plural: 'Lecture rooms' },
+  { value: 'laboratory', label: 'Laboratory', plural: 'Laboratories' },
+];
 export type Settings = { current_semester: string; current_academic_year: string; semester_start: string | null; semester_end: string | null };
 export type OfficialSchedule = {
   id: string;

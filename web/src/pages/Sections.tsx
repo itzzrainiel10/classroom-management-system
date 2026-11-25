@@ -20,7 +20,7 @@ export default function Sections() {
   return (
     <>
       <PageHeader
-        title="Section Management"
+        title="Sections"
         subtitle="Year levels and sections. Students see the official schedule of the section they belong to."
         actions={
           <button className="btn btn-primary" onClick={() => setEdit({ year_level: 1, program: '', department: '' })}>
@@ -106,7 +106,7 @@ export default function Sections() {
           title={`Delete ${del.name}?`}
           body={
             classes(del.id).length || w.schedules.some((x) => x.section_id === del.id)
-              ? 'This section still has scheduled classes. Delete them in Schedule Management first.'
+              ? 'This section still has scheduled classes. Delete them on the Schedules page first.'
               : `${students(del.id).length} student(s) will be left without a section.`
           }
           confirmLabel="Delete section"

@@ -29,7 +29,7 @@ export default function Classes() {
   return (
     <>
       <PageHeader
-        title="Classes & enrollment"
+        title="Classes"
         subtitle="Organize courses, sections and student enrollment."
         actions={
           <button className="btn btn-primary" onClick={() => setDialog('create')}>
@@ -210,7 +210,7 @@ function CreateClass({ onClose, onSaved }: { onClose: () => void; onSaved: (id: 
 
   const save = async () => {
     if (!code.trim() || !title.trim()) return setErr('Enter the course code and title.');
-    if (!instructor) return setErr('Choose an instructor. Set someone’s role to Instructor in Users & roles first.');
+    if (!instructor) return setErr('Choose an instructor. Approve them in Instructor applications first.');
     setBusy(true);
     setErr(null);
     try {

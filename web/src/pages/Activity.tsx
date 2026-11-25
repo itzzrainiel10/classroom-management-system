@@ -22,7 +22,7 @@ const CATEGORIES: Record<string, string> = {
   assignment: 'Assignments',
   announcement: 'Announcements',
   schedule: 'Schedules',
-  user: 'Users & roles',
+  user: 'Users',
   sign_in: 'Sign-ins',
 };
 

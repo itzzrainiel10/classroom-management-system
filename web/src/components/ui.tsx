@@ -4,11 +4,10 @@ import type { UserRow } from '../lib/data';
 import { initials } from '../lib/format';
 import { Icon, type IconName } from './icons';
 
-export function PageHeader({ eyebrow = 'MANAGE', title, subtitle, actions }: { eyebrow?: string; title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions }: { eyebrow?: string; title: string; subtitle?: string; actions?: ReactNode }) {
   return (
     <div className="page-head">
       <div>
-        <div className="eyebrow">{eyebrow}</div>
         <h1>{title}</h1>
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
@@ -17,15 +16,10 @@ export function PageHeader({ eyebrow = 'MANAGE', title, subtitle, actions }: { e
   );
 }
 
-export function Tile({ label, value, sub, icon, hero }: { label: string; value: string; sub?: string; icon: IconName; hero?: boolean }) {
+export function Tile({ label, value, sub }: { label: string; value: string; sub?: string; icon?: IconName; hero?: boolean }) {
   return (
-    <div className={`card tile${hero ? ' hero' : ''}`}>
-      <div className="label">
-        <span className="ic">
-          <Icon name={icon} size={15} />
-        </span>
-        {label}
-      </div>
+    <div className="card tile">
+      <div className="label">{label}</div>
       <div className="value">{value}</div>
       {sub ? <div className="sub">{sub}</div> : null}
     </div>

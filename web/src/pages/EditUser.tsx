@@ -4,14 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../components/Shell';
 import { Avatar, CardHead, Empty, Field, PageHeader, RoleChip, StatusBadge, Success } from '../components/ui';
-import { classLabel, rolesOf, setRole, setStudentSection, updateUser, userRows } from '../lib/data';
-import { AppBadge } from './Verification';
+import { classLabel, rolesOf, setStudentSection, updateUser, userRows } from '../lib/data';
 import { fmtDate, splitName } from '../lib/format';
-
-const PERMISSIONS = {
-  student: ['View enrolled classes', 'Take approved quizzes and exams', 'View assignments and announcements', 'View own results and schedule'],
-  instructor: ['Manage assigned classes and rosters', 'Create quizzes (published after admin review)', 'Post assignments, announcements and schedules', 'Monitor student results'],
-};
 
 export default function EditUser() {
   const { id } = useParams();
@@ -27,9 +21,8 @@ export default function EditUser() {
   const [last, setLast] = useState(initial.last);
   const [studentNo, setStudentNo] = useState(profile?.student_number ?? '');
   const [status, setStatus] = useState<'active' | 'suspended'>(profile?.status ?? 'active');
-  const [role, setRoleState] = useState<'student' | 'instructor'>(currentRole);
+  const role = currentRole;
   const [sectionId, setSectionId] = useState(profile?.section_id ?? '');
-  const application = w.instructorProfiles.find((a) => a.user_id === id);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -49,7 +42,6 @@ export default function EditUser() {
     setErr(null);
     try {
       await updateUser(profile.id, { full_name: full, student_number: studentNo.trim(), status });
-      if (role !== currentRole || roles.every((r) => r === 'admin')) await setRole(profile.id, role);
       if (role === 'student' && (sectionId || null) !== (profile.section_id ?? null)) await setStudentSection(profile.id, sectionId || null);
       await refresh();
       setDone(true);
@@ -64,7 +56,7 @@ export default function EditUser() {
     <>
       <PageHeader
         title="Edit user"
-        subtitle="Update profile information and assigned permissions."
+        subtitle="Update profile information."
         actions={
           <>
             <Link to="/users" className="btn btn-secondary">
@@ -92,8 +84,7 @@ export default function EditUser() {
         <small style={{ color: 'var(--muted)', width: '100%' }}>Member since {fmtDate(profile.created_at)}</small>
       </div>
 
-      <div className="grid grid-2-even">
-        <div className="card">
+      <div className="card">
           <CardHead title="Profile details" />
           <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-grid">
@@ -137,58 +128,6 @@ export default function EditUser() {
               </div>
             ) : null}
           </div>
-        </div>
-
-        <div className="card">
-          <CardHead title="Role & access" />
-          <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="radio-cards">
-              {(['student', 'instructor'] as const).map((r) => (
-                <label key={r} className={role === r ? 'on' : ''}>
-                  <input type="radio" name="role" checked={role === r} onChange={() => setRoleState(r)} />
-                  <div>
-                    <b>{r === 'student' ? 'Student' : 'Instructor'}</b>
-                    <small>{r === 'student' ? 'Learns in enrolled classes' : 'Teaches assigned classes'}</small>
-                  </div>
-                </label>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: 'var(--muted)', marginBottom: 8 }}>{role.toUpperCase()} PERMISSIONS</div>
-              <div className="perm">
-                {PERMISSIONS[role].map((p) => (
-                  <div key={p}>
-                    <Icon name="check" size={16} /> {p}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {role !== currentRole && role === 'instructor' ? (
-              <div className="note gold">
-                <Icon name="info" />
-                <div>This grants teaching access to assigned classes. Existing student enrollments stay until you remove them in Classes & sections.</div>
-              </div>
-            ) : null}
-            {application ? (
-              <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div className="row" style={{ justifyContent: 'space-between' }}>
-                  <b>Instructor application</b>
-                  <AppBadge status={application.status} />
-                </div>
-                <small style={{ color: 'var(--text-soft)' }}>
-                  ID {application.employee_id || '—'} · {application.department || '—'} · {application.contact_number || '—'}
-                </small>
-                <Link className="link" to="/verification">
-                  Open in Instructor Verification
-                </Link>
-              </div>
-            ) : null}
-            <div className="note">
-              <Icon name="shield" />
-              <div>Only administrators can change a user’s role. Setting someone to Instructor here counts as approving them and is recorded.</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="card">
@@ -213,11 +152,11 @@ export default function EditUser() {
             )}
           </div>
         ) : (
-          <Empty icon="book" title="No classes yet" body={role === 'instructor' ? 'Assign this instructor to a class in Classes & sections.' : 'Enroll this student from Classes & sections.'} />
+          <Empty icon="book" title="No classes yet" body={role === 'instructor' ? 'Assign this instructor to a class on the Classes page.' : 'Enroll this student from the Classes page.'} />
         )}
       </div>
 
-      {done ? <Success title="User updated" body={`${first} ${last}’s profile and assigned permissions have been saved.`} onDone={() => navigate('/users')} /> : null}
+      {done ? <Success title="User updated" body={`${first} ${last}’s profile has been saved.`} onDone={() => navigate('/users')} /> : null}
     </>
   );
 }
