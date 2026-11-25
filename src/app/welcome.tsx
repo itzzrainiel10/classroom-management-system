@@ -10,7 +10,7 @@ import type { Role } from '@/lib/auth';
 
 const SEAL = require('../../assets/images/splash-icon.png');
 const BG = require('../../assets/images/cvsu.jpg');
-const GOLD = '#f7bf17';
+const GOLD = '#ffea00';
 const PAGE = '#ffffff'; // warm off-white the photo fades into
 
 function RoleCard({ role, title, body, icon, delay }: { role: Role; title: string; body: string; icon: 'school-outline' | 'person-outline'; delay: number }) {
@@ -24,12 +24,15 @@ function RoleCard({ role, title, body, icon, delay }: { role: Role; title: strin
         <View style={styles.iconRing}>
           <Ionicons name={icon} size={22} color={colors.primary} />
         </View>
-        <View style={{ flex: 1, gap: 2 }}>
+        <View style={{ flex: 1, gap: 2, alignItems: 'center' }}>
           <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardBody}>{body}</Text>
+          {body ? <Text style={styles.cardBody}>{body}</Text> : null}
         </View>
-        <View style={styles.arrow}>
-          <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
+        {/* same width as the icon so the name sits exactly in the middle */}
+        <View style={{ width: 46, alignItems: 'flex-end' }}>
+          <View style={styles.arrow}>
+            <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
+          </View>
         </View>
       </Pressable>
     </Animated.View>
@@ -61,8 +64,7 @@ export default function Welcome() {
         </Svg>
 
         <View style={[styles.hero, { paddingTop: insets.top + 100, paddingBottom: compact ? 36 : 52 }]}>
-          {/* Solid white disc behind the seal so it stands out from the green photo */}
-          <Animated.View entering={FadeIn.duration(700)} style={[styles.sealDisc, { width: seal + 28, height: seal + 28, borderRadius: (seal + 28) / 2 }]}>
+          <Animated.View entering={FadeIn.duration(700)} style={{ marginBottom: 6 }}>
             <Image source={SEAL} style={{ width: seal, height: seal }} resizeMode="contain" accessibilityLabel="Cavite State University seal" />
           </Animated.View>
           <Animated.Text entering={FadeInDown.delay(150).duration(600)} style={styles.uni}>
@@ -82,12 +84,12 @@ export default function Welcome() {
       {/* Choose how to continue */}
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 15 }]}>
         <Animated.View entering={FadeInUp.delay(350).duration(550)} style={{ gap: 3 }}>
-          <Text style={styles.kicker}>WELCOME</Text>
-          <Text style={styles.heading}>How would you like to sign in?</Text>
+          <Text style={styles.kicker}>WELCOME!</Text>
+          <Text style={styles.heading}>Let's Get You Signed In!</Text>
         </Animated.View>
-        <View style={{ gap: 12 }}>
-          <RoleCard delay={550} role="student" icon="person-outline" title="Student" body="Classes, quizzes, schedule and attendance." />
-          <RoleCard delay={650} role="instructor" icon="school-outline" title="Instructor" body="Teach classes, post work and track results." />
+        <View style={{ gap: 15 }}>
+          <RoleCard delay={550} role="student" icon="person-outline" title="Student" body="" />
+          <RoleCard delay={650} role="instructor" icon="school-outline" title="Instructor" body="" />
         </View>
         <Animated.Text entering={FadeIn.delay(800).duration(600)} style={styles.footer}>
           Truth · Excellence · Service
@@ -100,15 +102,6 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: PAGE, overflow: 'hidden' },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 10 },
-  sealDisc: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 3,
-    borderColor: GOLD,
-    marginBottom: 6,
-    boxShadow: '0px 6px 20px rgba(0,0,0,0.35)',
-  },
 
   
   uni: { color: GOLD, fontWeight: '700', letterSpacing: 3.2, fontSize: 12.5 },
@@ -127,8 +120,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   sheet: { flex: 1, justifyContent: 'space-between', paddingHorizontal: 22, paddingTop: 4 },
-  kicker: { color: colors.primary, fontSize: 11.5, fontWeight: '800', letterSpacing: 2.2 },
-  heading: { color: '#111713', fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  kicker: { color: colors.primary, fontSize: 15, fontWeight: '800', letterSpacing: 2.2 },
+  heading: { color: '#111713', fontSize: 21, fontWeight: '700', letterSpacing: -0.3 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -143,8 +136,8 @@ const styles = StyleSheet.create({
   },
   cardPressed: { transform: [{ scale: 0.985 }], borderColor: colors.primary, backgroundColor: '#F3F8F4' },
   iconRing: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#DCE9DF', alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: '#111713', letterSpacing: -0.2 },
-  cardBody: { fontSize: 13.5, color: '#48514C', lineHeight: 18 },
+  cardTitle: { fontSize: 19, fontWeight: '700', color: '#111713', letterSpacing: -0.2, textAlign: 'center' },
+  cardBody: { fontSize: 13.5, color: '#48514C', lineHeight: 18, textAlign: 'center' },
   arrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   footer: { color: '#68716B', fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textAlign: 'center', marginTop: 6 },
 });
