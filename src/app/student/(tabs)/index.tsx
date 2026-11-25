@@ -1,29 +1,26 @@
 import { router } from 'expo-router';
-import { Alert, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DashTitle, DashTopBar, Panel, PanelLink, PanelRow, StatGrid } from '@/components/dashboard';
+import { HeroBackdrop, HeroTopBar } from '@/components/hero';
+import { MenuRow } from '@/components/menu-row';
 import { ChooseSectionCard } from '@/components/section-picker';
-import { OfficialClassCard, inSession, termPhase, useTimetable } from '@/components/official-schedule';
+import { OfficialClassCard, TermBanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
 import { UploadStatus } from '@/components/upload-status';
-import { Button, OfflineNote, ProgressBar, Screen } from '@/components/ui';
-import { colors } from '@/constants/theme';
+import { Button, Caption, Card, H2, Label, OfflineNote, OnPrimary, ProgressBar, Screen } from '@/components/ui';
+import { colors, radius, shadow } from '@/constants/theme';
 import { useStudentHome } from '@/hooks/use-student';
 import { useAuth } from '@/lib/auth';
-import { fmtDate, fmtToday } from '@/lib/format';
+import { firstName, fmtDate } from '@/lib/format';
 
 export default function StudentHome() {
-  const { signOut } = useAuth();
+  const { fullName, signOut } = useAuth();
   const { data, offline, savedAt, refresh } = useStudentHome();
   const quizzes = data?.quizzes ?? [];
   const timetable = useTimetable();
   const today = ((new Date().getDay() + 6) % 7) + 1;
-  const term = timetable.data?.term;
-  const phase = termPhase(term);
-  const section = timetable.data?.section;
-  const todays = inSession(term, new Date())
-    ? (timetable.data?.classes ?? []).filter((c) => c.day_of_week === today).sort((a, b) => a.start_time.localeCompare(b.start_time))
-    : [];
+  const phase = termPhase(timetable.data?.term);
+  const todays = inSession(timetable.data?.term, new Date()) ? (timetable.data?.classes ?? []).filter((c) => c.day_of_week === today) : [];
   const done = quizzes.filter((q) => q.attempts.length > 0).length;
   const progress = quizzes.length ? done / quizzes.length : 0;
   const next = quizzes.filter((q) => q.attempts.length === 0).sort((a, b) => (a.due_at ?? '9').localeCompare(b.due_at ?? '9'))[0];
@@ -34,68 +31,75 @@ export default function StudentHome() {
       { text: 'Log out', style: 'destructive', onPress: signOut },
     ]);
 
-  const termLine = term ? `${term.current_semester}, AY ${term.current_academic_year}` : '';
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
-      <Screen
-        onRefresh={() => {
-          refresh();
-          timetable.refresh();
-        }}>
-        <DashTopBar role="Student" onSignOut={confirmSignOut} onBell={() => router.push('/student/notifications')} />
-        <DashTitle title="Dashboard" subtitle={[fmtToday(), termLine, section?.name].filter(Boolean).join(' · ')} />
+      <Screen onRefresh={refresh}>
+        <View style={styles.hero}>
+          <HeroBackdrop />
+          <HeroTopBar role="Student" onSignOut={confirmSignOut} onBell={() => router.push('/student/notifications')} />
+          <OnPrimary size="lg">Hello, {fullName ? firstName(fullName) : 'Student'}!</OnPrimary>
+          <OnPrimary>Welcome back. Keep moving forward.</OnPrimary>
+          <View style={styles.progress}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={styles.progressLabel}>Your progress</Text>
+              <Text style={styles.progressValue}>{Math.round(progress * 100)}%</Text>
+            </View>
+            <ProgressBar value={progress} />
+            <Caption>
+              {done} of {quizzes.length} quizzes completed{progress >= 0.8 ? ' · Keep going!' : ''}
+            </Caption>
+          </View>
+        </View>
 
         <OfflineNote show={offline} savedAt={savedAt} />
         <UploadStatus />
-        {timetable.data && !section ? <ChooseSectionCard onChosen={timetable.refresh} /> : null}
 
-        <StatGrid
-          items={[
-            { label: 'My classes', value: data?.classes.length ?? 0, sub: section?.name ?? 'No section yet' },
-            { label: 'Classes today', value: todays.length, sub: fmtToday().split(',')[0] },
-            { label: 'Quizzes done', value: `${done}/${quizzes.length}`, sub: `${Math.round(progress * 100)}% complete` },
-            { label: 'Quizzes to take', value: quizzes.length - done, sub: next?.due_at ? `Next due ${fmtDate(next.due_at)}` : 'Nothing due' },
-          ]}
-        />
-
-        {next ? (
-          <Panel title="Next quiz" pad>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{next.title}</Text>
-            <Text style={{ fontSize: 12, color: colors.textSoft }}>
-              {next.class?.code} · Due {fmtDate(next.due_at)} · {next.time_limit_minutes} minutes
-            </Text>
-            <View style={{ gap: 4 }}>
-              <ProgressBar value={progress} tone="green" />
-            </View>
-            <Button title="Take quiz" small onPress={() => router.push(`/student/quiz/${next.id}`)} />
-          </Panel>
-        ) : null}
-
-        <Panel title="Today’s classes" right={<PanelLink label="Full schedule" onPress={() => router.push('/student/schedule')} />} pad>
+        {timetable.data && !timetable.data.section ? <ChooseSectionCard onChosen={timetable.refresh} /> : null}
+        <Card style={{ gap: 10 }}>
+          <Label>Today’s classes</Label>
+          <TermBanner term={timetable.data?.term} extra={timetable.data?.section?.name ?? 'No section yet'} />
           {todays.length ? (
             todays.map((c) => <OfficialClassCard key={c.id} c={c} viewer="student" />)
           ) : (
-            <Text style={{ color: colors.textSoft, fontSize: 13 }}>
-              {!section
+            <Caption>
+              {!timetable.data?.section
                 ? 'Choose your section above to see your classes.'
                 : phase === 'ended'
                   ? 'The semester has ended.'
                   : phase === 'upcoming'
                     ? 'The semester hasn’t started yet. See Schedule for your upcoming classes.'
                     : 'No classes today.'}
-            </Text>
+            </Caption>
           )}
-        </Panel>
+        </Card>
 
-        <Panel title="Menu">
-          <PanelRow icon="book-outline" title="My classes" body="Your learning, all in one place" badge={data ? String(data.classes.length) : undefined} onPress={() => router.push('/student/classes')} />
-          <PanelRow icon="create-outline" title="Quizzes" body="Answer quizzes and see your scores" onPress={() => router.push('/student/quizzes')} />
-          <PanelRow icon="document-text-outline" title="Assignments" body="Keep track of your coursework" onPress={() => router.push('/student/assignments')} />
-          <PanelRow icon="megaphone-outline" title="Announcements" body="The latest from your instructors" onPress={() => router.push('/student/announcements')} />
-          <PanelRow icon="calendar-outline" title="Schedule" body="Week and month view" onPress={() => router.push('/student/schedule')} last />
-        </Panel>
+        {next ? (
+          <Card tone="gold" style={{ gap: 8 }}>
+            <Label style={{ color: colors.text }}>Upcoming activity</Label>
+            <H2>Quiz: {next.title}</H2>
+            <Caption style={{ color: colors.text }}>
+              {next.class?.code} · Due {fmtDate(next.due_at)} · {next.time_limit_minutes} minutes
+            </Caption>
+            <Button title="Take quiz" iconRight="arrow-forward" small onPress={() => router.push(`/student/quiz/${next.id}`)} />
+          </Card>
+        ) : null}
+
+        <Label>Your menu</Label>
+        <View style={{ gap: 10 }}>
+          <MenuRow icon="book" title="My Classes" body="Your learning, all in one place." onPress={() => router.push('/student/classes')} badge={data ? String(data.classes.length) : undefined} />
+          <MenuRow icon="create" title="Quizzes" body="Answer quizzes and see your scores." onPress={() => router.push('/student/quizzes')} />
+          <MenuRow icon="document-text" title="Assignments" body="Keep track of your coursework." onPress={() => router.push('/student/assignments')} />
+          <MenuRow icon="megaphone" title="Announcements" body="The latest from your instructor." onPress={() => router.push('/student/announcements')} />
+          <MenuRow icon="calendar" title="Schedule" body="Your week at a glance." onPress={() => router.push('/student/schedule')} />
+        </View>
       </Screen>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  hero: { backgroundColor: colors.primary, marginHorizontal: -20, marginTop: -20, padding: 20, paddingTop: 12, paddingBottom: 26, gap: 6, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, overflow: 'hidden' },
+  progress: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 16, gap: 10, marginTop: 16, ...shadow.lg },
+  progressLabel: { fontWeight: '800', color: colors.text },
+  progressValue: { fontWeight: '800', color: colors.primary },
+});

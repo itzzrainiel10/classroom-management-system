@@ -1,28 +1,27 @@
 import { router } from 'expo-router';
-import { Alert, Text } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DashTitle, DashTopBar, Panel, PanelLink, PanelRow, StatGrid } from '@/components/dashboard';
-import { OfficialClassCard, termDates, termPhase, useTimetable, weeklyHours } from '@/components/official-schedule';
+import { HeroBackdrop, HeroTopBar } from '@/components/hero';
+import { MenuRow } from '@/components/menu-row';
+import { TermBanner, termPhase, useTimetable, weeklyHours } from '@/components/official-schedule';
 import { UploadStatus } from '@/components/upload-status';
-import { OfflineNote, Screen } from '@/components/ui';
-import { colors } from '@/constants/theme';
+import { Card, Label, OfflineNote, OnPrimary, Screen } from '@/components/ui';
+import { colors, radius, shadow } from '@/constants/theme';
 import { useClasses } from '@/hooks/use-classes';
 import { useAuth } from '@/lib/auth';
-import { fmtToday, isoWeekday } from '@/lib/format';
+import { firstName, fmtToday, greetingFor } from '@/lib/format';
 import { OMR_STATUS } from '@/lib/omr';
 
 export default function InstructorHome() {
-  const { signOut } = useAuth();
+  const { fullName, signOut } = useAuth();
   const { data, offline, savedAt, refresh } = useClasses();
   const classes = data ?? [];
   const timetable = useTimetable();
-  const term = timetable.data?.term;
-  const phase = termPhase(term);
-  const official = phase === 'ended' ? [] : (timetable.data?.classes ?? []);
-  const sections = new Set(official.map((c) => c.section_name)).size;
+  const official = termPhase(timetable.data?.term) === 'ended' ? [] : (timetable.data?.classes ?? []);
+  const subjects = new Set(official.map((c) => c.subject_code)).size;
+  const sections = [...new Set(official.map((c) => c.section_name))];
   const totals = classes.reduce((t, c) => ({ students: t.students + c.students, assignments: t.assignments + c.assignments }), { students: 0, assignments: 0 });
-  const todays = phase === 'upcoming' ? [] : official.filter((c) => c.day_of_week === isoWeekday()).sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   const confirmSignOut = () =>
     Alert.alert('Log out?', 'You can log back in any time.', [
@@ -30,60 +29,80 @@ export default function InstructorHome() {
       { text: 'Log out', style: 'destructive', onPress: signOut },
     ]);
 
-  const termLine = term ? `${term.current_semester}, AY ${term.current_academic_year}${termDates(term) ? ` · ${termDates(term)}` : ''}` : '';
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
-      <Screen
-        onRefresh={() => {
-          refresh();
-          timetable.refresh();
-        }}>
-        <DashTopBar role="Instructor" onSignOut={confirmSignOut} onBell={() => router.push('/instructor/notifications')} />
-        <DashTitle title="Dashboard" subtitle={[fmtToday(), termLine].filter(Boolean).join(' · ')} />
+      <Screen onRefresh={refresh}>
+        <View style={styles.hero}>
+          <HeroBackdrop />
+          <HeroTopBar role="Instructor" onSignOut={confirmSignOut} onBell={() => router.push('/instructor/notifications')} />
+          <OnPrimary size="lg">
+            {greetingFor()}
+            {fullName ? `, ${firstName(fullName)}` : ''}!
+          </OnPrimary>
+          <OnPrimary>{fmtToday()} </OnPrimary>
+          <View style={styles.stats}>
+            <Stat n={classes.length} label="Classes" />
+            <View style={styles.divider} />
+            <Stat n={totals.assignments} label="Assignments" />
+            <View style={styles.divider} />
+            <Stat n={totals.students} label="Students" />
+          </View>
+        </View>
 
         <OfflineNote show={offline} savedAt={savedAt} />
         <UploadStatus />
 
-        <StatGrid
-          items={[
-            { label: 'My classes', value: classes.length, sub: `${sections} section${sections === 1 ? '' : 's'}` },
-            { label: 'Students', value: totals.students, sub: 'Across all classes' },
-            { label: 'Assignments', value: totals.assignments, sub: 'Posted' },
-            { label: 'Teaching load', value: `${weeklyHours(official)} h`, sub: 'Per week' },
-          ]}
-        />
-
-        <Panel title="Today’s classes" right={<PanelLink label="Full schedule" onPress={() => router.push('/instructor/schedule')} />} pad>
-          {todays.length ? (
-            todays.map((c) => <OfficialClassCard key={c.id} c={c} viewer="instructor" />)
+        <Card style={{ gap: 8 }}>
+          <Label>Teaching load</Label>
+          <TermBanner term={timetable.data?.term} />
+          {official.length ? (
+            <>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
+              </Text>
+              <Text style={{ color: colors.textSoft, fontSize: 13 }}>{sections.join(', ')}</Text>
+            </>
           ) : (
-            <Text style={{ color: colors.textSoft, fontSize: 13 }}>
-              {phase === 'ended'
-                ? 'The semester has ended.'
-                : phase === 'upcoming'
-                  ? 'The semester hasn’t started yet.'
-                  : official.length
-                    ? 'No classes today.'
-                    : 'No official classes assigned yet. Your administrator assigns subjects and sections.'}
-            </Text>
+            <Text style={{ color: colors.textSoft, fontSize: 13 }}>No official classes assigned yet. Your administrator assigns subjects and sections.</Text>
           )}
-        </Panel>
+          <MenuRow icon="calendar" title="Teaching schedule" body="Subjects, sections, rooms and times." onPress={() => router.push('/instructor/schedule')} />
+        </Card>
 
-        <Panel title="Quick access">
-          <PanelRow icon="create-outline" title="Create quiz / exam" body="Build an assessment for your class" onPress={() => router.push('/instructor/quiz/new')} />
-          <PanelRow icon="document-attach-outline" title="Post assignment" body="Share the next learning activity" onPress={() => router.push('/instructor/assignment')} />
-          <PanelRow icon="megaphone-outline" title="Announcements" body="Keep your class in the loop" onPress={() => router.push('/instructor/announcement')} />
-          <PanelRow icon="bar-chart-outline" title="Monitor results" body="Review scores and completion" onPress={() => router.push('/instructor/results')} />
-          <PanelRow icon="people-outline" title="Manage classes" body="Students, activities and settings" onPress={() => router.push('/instructor/classes')} last />
-        </Panel>
+        <Label>Quick access</Label>
+        <View style={{ gap: 10 }}>
+          <MenuRow icon="create" title="Create Quiz / Exams" body="Build an assessment for your class." onPress={() => router.push('/instructor/quiz/new')} />
+          <MenuRow icon="document-attach" title="Post Assignments" body="Share the next learning activity." onPress={() => router.push('/instructor/assignment')} />
+          <MenuRow icon="megaphone" title="Announcements" body="Keep your class in the loop." onPress={() => router.push('/instructor/announcement')} />
+          <MenuRow icon="calendar" title="Class Schedule" body="Plan your week of teaching." onPress={() => router.push('/instructor/schedule')} />
+          <MenuRow icon="bar-chart" title="Monitor Results" body="Review scores and completion." onPress={() => router.push('/instructor/results')} />
+          <MenuRow icon="people" title="Manage classes" body="Students, activities & settings." onPress={() => router.push('/instructor/classes')} />
+        </View>
 
-        {OMR_STATUS === 'planned' ? (
-          <Text style={{ color: colors.textSoft, fontSize: 12 }}>
-            Paper answer sheets (OMR) are planned but not available yet. Students answer quizzes in the app and scores are computed automatically.
+        <Card tone="soft" style={{ gap: 4 }}>
+          <Text style={{ fontWeight: '800', color: colors.primary }}>Paper answer sheets (OMR)</Text>
+          <Text style={{ color: colors.textSoft, fontSize: 13 }}>
+            {OMR_STATUS === 'planned'
+              ? 'Planned — not available yet. Students currently answer quizzes in the app and scores are computed automatically.'
+              : 'Available'}
           </Text>
-        ) : null}
+        </Card>
       </Screen>
     </SafeAreaView>
   );
 }
+
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <Text style={styles.statN}>{n}</Text>
+      <Text style={styles.statL}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: { backgroundColor: colors.primary, marginHorizontal: -20, marginTop: -20, padding: 20, paddingTop: 12, paddingBottom: 26, gap: 6, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, overflow: 'hidden' },
+  stats: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radius.lg, paddingVertical: 16, marginTop: 16, ...shadow.lg },
+  divider: { width: 1, height: 28, backgroundColor: colors.line },
+  statN: { fontSize: 24, fontWeight: '800', color: colors.primary, letterSpacing: -0.5 },
+  statL: { fontSize: 12, color: colors.textSoft, fontWeight: '600' },
+});
