@@ -165,7 +165,7 @@ export default function ManageClass() {
           {data.assignments.length ? (
             <ListCard>
               {data.assignments.map((a, i) => (
-                <ListItem key={a.id} icon="document-attach-outline" title={a.title} subtitle={`Due ${fmtDateTime(a.due_at)}`} last={i === data.assignments.length - 1} />
+                <ListItem key={a.id} icon="document-attach-outline" title={a.title} subtitle={`Due ${fmtDateTime(a.due_at)}${a.attachments?.length ? ` · ${a.attachments.length} file${a.attachments.length === 1 ? '' : 's'}` : ''}`} last={i === data.assignments.length - 1} />
               ))}
             </ListCard>
           ) : (

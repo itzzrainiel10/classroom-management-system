@@ -72,7 +72,9 @@ export type Attempt = {
   started_at: string | null;
   submitted_at: string;
 };
-export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; class?: ClassRef | null; _pending?: true };
+/** A file attached to an assignment (private "assignment-files" bucket, path <class>/<assignment>/<file>). */
+export type Attachment = { path: string; name: string; size: number; type: string };
+export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; attachments?: Attachment[]; class?: ClassRef | null; _pending?: true };
 export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string; class?: ClassRef | null; _pending?: true };
 export type Schedule = { id: string; class_id: string; day_of_week: number; start_time: string; end_time: string; room: string; class?: ClassRef | null; _pending?: true };
 
@@ -229,8 +231,16 @@ export function addStudentOp(classId: string, email: string, fullName: string): 
 
 export const removeStudentOp = (id: string, email: string): Op => ({ op: { kind: 'delete', table: 'class_students', id }, label: `Remove ${email}` });
 
-export function assignmentOp(classId: string, v: { title: string; description: string; due_at: string | null }): Op {
-  const row = { id: randomUUID(), class_id: classId, title: v.title.trim(), description: v.description.trim(), due_at: v.due_at, created_at: new Date().toISOString() };
+export function assignmentOp(classId: string, v: { title: string; description: string; due_at: string | null }, extra: { id?: string; attachments?: Attachment[] } = {}): Op {
+  const row = {
+    id: extra.id ?? randomUUID(),
+    class_id: classId,
+    title: v.title.trim(),
+    description: v.description.trim(),
+    due_at: v.due_at,
+    attachments: extra.attachments ?? [],
+    created_at: new Date().toISOString(),
+  };
   return { op: { kind: 'insert', table: 'assignments', row }, label: `Assignment “${row.title}”` };
 }
 
@@ -464,3 +474,36 @@ export async function fetchMyAttendance(): Promise<MyAttendanceRow[]> {
     .filter((r) => r.class && r.session_date)
     .sort((a, b) => b.session_date.localeCompare(a.session_date));
 }
+
+/* ---------- Assignment attachments ---------- */
+
+export const MAX_ATTACHMENT_MB = 25;
+
+/** Uploads picked files for a new assignment (needs internet). Returns what to store on the assignment. */
+export async function uploadAssignmentFiles(classId: string, assignmentId: string, files: { uri: string; name: string; size?: number | null; mimeType?: string | null }[]): Promise<Attachment[]> {
+  const c = client();
+  const out: Attachment[] = [];
+  try {
+    for (const f of files) {
+      const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file';
+      const p = `${classId}/${assignmentId}/${Date.now()}-${safe}`;
+      const body = await (await fetch(f.uri)).arrayBuffer();
+      const { error } = await c.storage.from('assignment-files').upload(p, body, { contentType: f.mimeType ?? 'application/octet-stream', upsert: false });
+      if (error) throw new Error(`“${f.name}” didn’t upload: ${error.message}`);
+      out.push({ path: p, name: f.name, size: f.size ?? body.byteLength, type: f.mimeType ?? '' });
+    }
+  } catch (e) {
+    if (out.length) await c.storage.from('assignment-files').remove(out.map((a) => a.path));
+    throw e;
+  }
+  return out;
+}
+
+/** Short-lived download link (the bucket is private; enrolled students and the instructor may read). */
+export async function attachmentUrl(a: Attachment) {
+  const { data, error } = await client().storage.from('assignment-files').createSignedUrl(a.path, 60 * 10);
+  if (error || !data) throw new Error(error?.message ?? 'Could not open the file');
+  return data.signedUrl;
+}
+
+export const fmtSize = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

@@ -1,3 +1,4 @@
+import { AttachmentList } from '@/components/attachments';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -62,6 +63,7 @@ export default function StudentClass() {
                 <Label>To do · Due {fmtDate(a.due_at)}</Label>
                 <H2>{a.title}</H2>
                 {a.description ? <Body>{a.description}</Body> : null}
+                <AttachmentList items={a.attachments ?? []} />
                 <Caption>Due {fmtDateTime(a.due_at)}</Caption>
               </Card>
             ))

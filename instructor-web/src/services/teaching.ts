@@ -52,7 +52,9 @@ export type Quiz = {
 export type QuizRow = Quiz & { class: ClassRef | null; questions: number; enrolled: number; attempts: Attempt[] };
 export type Question = { id: string; quiz_id: string; position: number; prompt: string; choices: string[]; type: QuestionType; points: number; item_count: number };
 export type KeyedQuestion = Question & { correct_index: number | null; answer: AnswerKey };
-export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string };
+/** A file attached to an assignment (stored in the private "assignment-files" bucket). */
+export type Attachment = { path: string; name: string; size: number; type: string };
+export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; attachments?: Attachment[] };
 export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string };
 export type Student = { id: string; class_id: string; email: string; full_name: string };
 
@@ -156,14 +158,45 @@ export async function fetchPosts(classIds: string[]) {
   return { assignments: must(a) as Assignment[], announcements: must(n) as Announcement[] };
 }
 
-export async function postAssignment(v: { class_id: string; title: string; description: string; due_at: string | null }) {
-  must(await supabase.from('assignments').insert({ ...v, title: v.title.trim(), description: v.description.trim() }).select('id'));
+export const MAX_FILE_MB = 25;
+export const ACCEPT_FILES = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.webp,.heic,.gif,.zip';
+
+/**
+ * Posts an assignment with optional files. Files are uploaded first to <class>/<assignment>/…;
+ * if saving the assignment then fails, the uploaded files are removed again.
+ */
+export async function postAssignment(v: { class_id: string; title: string; description: string; due_at: string | null }, files: File[] = []) {
+  const id = crypto.randomUUID();
+  const attachments: Attachment[] = [];
+  try {
+    for (const f of files) {
+      const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file';
+      const p = `${v.class_id}/${id}/${Date.now()}-${safe}`;
+      const { error } = await supabase.storage.from('assignment-files').upload(p, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+      if (error) throw new Error(`“${f.name}” didn’t upload: ${error.message}`);
+      attachments.push({ path: p, name: f.name, size: f.size, type: f.type });
+    }
+    must(await supabase.from('assignments').insert({ id, ...v, title: v.title.trim(), description: v.description.trim(), attachments }).select('id'));
+  } catch (e) {
+    if (attachments.length) await supabase.storage.from('assignment-files').remove(attachments.map((a) => a.path));
+    throw e;
+  }
 }
+
+/** A short-lived download link for an attachment (the bucket is private). */
+export async function attachmentUrl(a: Attachment) {
+  const { data, error } = await supabase.storage.from('assignment-files').createSignedUrl(a.path, 60 * 10, { download: a.name });
+  if (error || !data) throw new Error(error?.message ?? 'Could not open the file');
+  return data.signedUrl;
+}
+
+export const fmtSize = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 export async function postAnnouncement(v: { class_id: string; title: string; message: string }) {
   must(await supabase.from('announcements').insert({ ...v, title: v.title.trim(), message: v.message.trim() }).select('id'));
 }
-export async function deletePost(table: 'assignments' | 'announcements', id: string) {
+export async function deletePost(table: 'assignments' | 'announcements', id: string, attachments: Attachment[] = []) {
   must(await supabase.from(table).delete().eq('id', id).select('id'));
+  if (attachments.length) await supabase.storage.from('assignment-files').remove(attachments.map((a) => a.path));
 }
 
 /** "a / b / c" → ["a","b","c"] (alternative accepted answers). */

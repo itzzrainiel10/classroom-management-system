@@ -20,6 +20,11 @@ import {
   gradeAttempt,
   postAnnouncement,
   postAssignment,
+  ACCEPT_FILES,
+  MAX_FILE_MB,
+  attachmentUrl,
+  fmtSize,
+  type Attachment,
   saveQuiz,
   typeLabel,
   type Attempt,
@@ -551,7 +556,9 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
   const [v, setV] = useState({ class_id: '', title: '', body: '', due: '' });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [del, setDel] = useState<{ id: string; title: string } | null>(null);
+  const [del, setDel] = useState<{ id: string; title: string; attachments?: Attachment[] } | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileKey, setFileKey] = useState(0);
 
   useEffect(() => {
     if (classes.data?.length && !v.class_id) setV((x) => ({ ...x, class_id: classes.data![0].id }));
@@ -564,7 +571,13 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
     setBusy(true);
     setMsg(null);
     try {
-      if (isTask) await postAssignment({ class_id: v.class_id, title: v.title, description: v.body, due_at: v.due ? new Date(v.due).toISOString() : null });
+      if (isTask) {
+        const big = files.find((f) => f.size > MAX_FILE_MB * 1048576);
+        if (big) throw new Error(`“${big.name}” is larger than ${MAX_FILE_MB} MB.`);
+        await postAssignment({ class_id: v.class_id, title: v.title, description: v.body, due_at: v.due ? new Date(v.due).toISOString() : null }, files);
+        setFiles([]);
+        setFileKey((k) => k + 1);
+      }
       else await postAnnouncement({ class_id: v.class_id, title: v.title, message: v.body });
       setV({ ...v, title: '', body: '', due: '' });
       setMsg({ text: `${isTask ? 'Assignment' : 'Announcement'} posted. Enrolled students see it in the mobile app.`, ok: true });
@@ -601,6 +614,30 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
                 <textarea className="textarea" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} />
               </Field>
               {isTask ? (
+                <Field label="Attachments (optional)" hint={`PDF, Word, PowerPoint, Excel, images or ZIP · up to ${MAX_FILE_MB} MB each`}>
+                  <input
+                    key={fileKey}
+                    className="input"
+                    type="file"
+                    multiple
+                    accept={ACCEPT_FILES}
+                    onChange={(e) => setFiles([...files, ...Array.from(e.target.files ?? [])])}
+                  />
+                </Field>
+              ) : null}
+              {isTask && files.length ? (
+                <div className="attach-list">
+                  {files.map((f, i) => (
+                    <span key={i} className="attach-chip">
+                      <Icon name="clipboard" size={13} /> {f.name} <small>{fmtSize(f.size)}</small>
+                      <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
+                        <Icon name="x" size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {isTask ? (
                 <Field label="Due date (optional)">
                   <input className="input" type="datetime-local" value={v.due} onChange={(e) => setV({ ...v, due: e.target.value })} />
                 </Field>
@@ -627,12 +664,31 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
                     <b>{p.title}</b>
                     <small style={{ display: 'block' }}>{classLabel(clsOf(p.class_id))}</small>
                     <small style={{ display: 'block', whiteSpace: 'pre-wrap' }}>{'description' in p ? p.description : p.message}</small>
+                    {'attachments' in p && p.attachments?.length ? (
+                      <div className="attach-list" style={{ marginTop: 6 }}>
+                        {p.attachments.map((a) => (
+                          <button
+                            key={a.path}
+                            type="button"
+                            className="attach-chip link-chip"
+                            onClick={async () => {
+                              try {
+                                window.open(await attachmentUrl(a), '_blank', 'noopener');
+                              } catch (e) {
+                                setMsg({ text: e instanceof Error ? e.message : String(e), ok: false });
+                              }
+                            }}>
+                            <Icon name="download" size={13} /> {a.name} <small>{fmtSize(a.size)}</small>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     <small style={{ display: 'block', color: 'var(--muted)' }}>
                       Posted {fmtDateTime(p.created_at)}
                       {'due_at' in p && p.due_at ? ` · Due ${fmtDateTime(p.due_at)}` : ''}
                     </small>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setDel({ id: p.id, title: p.title })} aria-label={`Delete ${p.title}`}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setDel({ id: p.id, title: p.title, attachments: 'attachments' in p ? p.attachments : [] })} aria-label={`Delete ${p.title}`}>
                     <Icon name="trash" size={14} />
                   </button>
                 </div>
@@ -646,12 +702,12 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
       {del ? (
         <Confirm
           title={`Delete “${del.title}”?`}
-          body="Students will no longer see it."
+          body={del.attachments?.length ? `Students will no longer see it, and its ${del.attachments.length} attached file(s) will be deleted.` : 'Students will no longer see it.'}
           confirmLabel="Delete"
           danger
           onClose={() => setDel(null)}
           onConfirm={async () => {
-            await deletePost(kind, del.id);
+            await deletePost(kind, del.id, del.attachments ?? []);
             setDel(null);
             await posts.refresh();
           }}

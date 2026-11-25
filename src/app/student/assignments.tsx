@@ -1,3 +1,4 @@
+import { AttachmentList } from '@/components/attachments';
 import { Body, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Screen } from '@/components/ui';
 import { useStudentHome } from '@/hooks/use-student';
 import { fmtDate, fmtDateTime } from '@/lib/format';
@@ -19,6 +20,7 @@ export default function StudentAssignments() {
             {a.class?.code} · {a.class?.title} · Section {a.class?.section}
           </Caption>
           {a.description ? <Body>{a.description}</Body> : null}
+          <AttachmentList items={a.attachments ?? []} />
           <Caption>Due {fmtDateTime(a.due_at)}</Caption>
         </Card>
       ))}
