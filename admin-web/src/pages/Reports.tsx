@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 
 import { PercentBars } from '../components/charts';
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { CardHead, Empty, PageHeader, Success, Tile } from '../components/ui';
-import { classLabel, classStats, fetchActivity, nameOf, useData } from '../lib/data';
-import { downloadCsv, fmtNum, fmtPct, pct, semesterLabel } from '../lib/format';
+import { classLabel, classStats, fetchActivity, nameOf, useData } from '../services/data';
+import { downloadCsv, fmtNum, fmtPct, pct, semesterLabel } from '../services/format';
 import { RANGES, sinceOf, type RangeKey } from './Activity';
+import { AttendanceReport } from './AttendanceReport';
 
 export default function Reports() {
   const { w } = useWorkspace();
@@ -143,6 +144,7 @@ export default function Reports() {
           {sectionRows.length ? <PercentBars rows={sectionRows} /> : <Empty icon="chart" title="No scores yet" body="Scores appear once students answer approved quizzes." />}
         </div>
       </div>
+      <AttendanceReport classes={classes} since={since} />
       {done ? <Success title="Report prepared" body="Your class report has been downloaded as a CSV file you can open in Excel or Google Sheets." onDone={() => setDone(false)} /> : null}
     </>
   );

@@ -423,3 +423,44 @@ export async function fetchSections(): Promise<SectionOption[]> {
 export async function chooseMySection(sectionId: string) {
   must(await client().rpc('choose_my_section', { _section_id: sectionId }));
 }
+
+/* ---------- Attendance (Present / Absent) ---------- */
+
+export type AttendanceStatus = 'present' | 'absent';
+export type AttendanceSession = { id: string; class_id: string; session_date: string };
+export type AttendanceRecord = { id: string; session_id: string; class_id: string; student_email: string; student_name: string; status: AttendanceStatus };
+
+/** One class's attendance (instructor: the whole class; row-level security limits students to their own rows). */
+export async function fetchClassAttendance(classId: string) {
+  const c = client();
+  const [sessions, records] = await Promise.all([
+    c.from('attendance_sessions').select('id, class_id, session_date').eq('class_id', classId).order('session_date', { ascending: false }),
+    c.from('attendance_records').select('id, session_id, class_id, student_email, student_name, status').eq('class_id', classId),
+  ]);
+  return { sessions: must(sessions) as AttendanceSession[], records: must(records) as AttendanceRecord[] };
+}
+
+/** Save (or replace) attendance for one class and date. Works offline: queued and uploaded later. */
+export function attendanceOp(classId: string, date: string, marks: { email: string; status: AttendanceStatus }[], label: string): Op {
+  return {
+    op: { kind: 'rpc', fn: 'save_attendance', args: { _class_id: classId, _date: date, _records: marks } },
+    label: `Attendance · ${label}`,
+  };
+}
+
+export type MyAttendanceRow = { status: AttendanceStatus; session_date: string; class: ClassRef & { id: string } };
+
+/** The signed-in student's own attendance across their classes. */
+export async function fetchMyAttendance(): Promise<MyAttendanceRow[]> {
+  const rows = must(
+    await client().from('attendance_records').select('status, attendance_sessions(session_date), classes(id, code, title, section)'),
+  ) as Raw[];
+  return rows
+    .map((r) => ({
+      status: r.status as AttendanceStatus,
+      session_date: ((r.attendance_sessions as { session_date: string } | null)?.session_date ?? '') as string,
+      class: r.classes as ClassRef & { id: string },
+    }))
+    .filter((r) => r.class && r.session_date)
+    .sort((a, b) => b.session_date.localeCompare(a.session_date));
+}

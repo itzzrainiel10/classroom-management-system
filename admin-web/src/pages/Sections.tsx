@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person } from '../components/ui';
-import { deleteSection, rolesOf, saveSection, setStudentSection, type Section } from '../lib/data';
+import { deleteSection, rolesOf, saveSection, setStudentSection, type Section } from '../services/data';
 
 export default function Sections() {
   const { w, refresh } = useWorkspace();
@@ -63,7 +63,7 @@ export default function Sections() {
                     <td>Year {s.year_level}</td>
                     <td className="num">{students(s.id).length}</td>
                     <td className="num">
-                      <Link className="link" to={`/schedules?section=${s.id}`}>
+                      <Link className="link" to={`/admin/schedules?section=${s.id}`}>
                         {classes(s.id).length}
                       </Link>
                     </td>

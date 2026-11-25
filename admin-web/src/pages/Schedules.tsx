@@ -2,10 +2,14 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
-import { DAYS, ROOM_TYPES, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../lib/data';
-import { downloadCsv, fmtClock, minutesOf, semesterRange } from '../lib/format';
+import { DAYS, ROOM_TYPES, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../services/data';
+import { downloadCsv, fmtClock, minutesOf, semesterRange } from '../services/format';
+
+/** Same subject → same calm colour (week-slot c0–c5) in every timetable. */
+const tint = (code: string) => `c${[...code].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 6}`;
+
 
 const HOUR_PX = 52;
 
@@ -133,13 +137,13 @@ export default function Schedules() {
           <Icon name="info" />
           <div>
             Before scheduling you need at least one{' '}
-            {!approved.length ? <Link className="link" to="/verification">approved instructor</Link> : null}
+            {!approved.length ? <Link className="link" to="/admin/instructor-verification">approved instructor</Link> : null}
             {!approved.length && (!w.subjects.length || !w.sections.length || !w.rooms.length) ? ', ' : ''}
-            {!w.subjects.length ? <Link className="link" to="/subjects">subject</Link> : null}
+            {!w.subjects.length ? <Link className="link" to="/admin/subjects">subject</Link> : null}
             {!w.subjects.length && (!w.sections.length || !w.rooms.length) ? ', ' : ''}
-            {!w.sections.length ? <Link className="link" to="/sections">section</Link> : null}
+            {!w.sections.length ? <Link className="link" to="/admin/sections">section</Link> : null}
             {!w.sections.length && !w.rooms.length ? ' and ' : ''}
-            {!w.rooms.length ? <Link className="link" to="/settings">room</Link> : null}.
+            {!w.rooms.length ? <Link className="link" to="/admin/settings">room</Link> : null}.
           </div>
         </div>
       ) : null}
@@ -356,7 +360,7 @@ function WeekCalendar({ w, items, onOpen }: { w: Workspace; items: OfficialSched
                 const top = ((minutesOf(s.start_time) - start) / 60) * HOUR_PX;
                 const height = ((minutesOf(s.end_time) - minutesOf(s.start_time)) / 60) * HOUR_PX - 2;
                 return (
-                  <button key={s.id} className="week-slot" style={{ top, height }} onClick={() => onOpen(s)} title={`${dsc.subjectCode} ${dsc.subjectName}\n${dsc.section} · ${dsc.time}\n${dsc.instructor} · ${dsc.room}`}>
+                  <button key={s.id} className={`week-slot ${tint(dsc.subjectCode)}`} style={{ top, height }} onClick={() => onOpen(s)} title={`${dsc.subjectCode} ${dsc.subjectName}\n${dsc.section} · ${dsc.time}\n${dsc.instructor} · ${dsc.room}`}>
                     <b>{dsc.subjectCode}</b>
                     <small>{dsc.section}</small>
                     <small>{dsc.time}</small>

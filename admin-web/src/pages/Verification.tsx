@@ -1,19 +1,20 @@
 import { useState } from 'react';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person, Success } from '../components/ui';
-import { fetchVerificationHistory, nameOf, proofUrl, reviewInstructor, useData, type AppStatus, type InstructorProfile } from '../lib/data';
-import { fmtDateTime } from '../lib/format';
+import { fetchVerificationHistory, nameOf, proofUrl, reviewInstructor, setInstructorSuspension, useData, type AppStatus, type InstructorProfile } from '../services/data';
+import { fmtDateTime } from '../services/format';
 
 const TABS: { id: AppStatus; label: string }[] = [
   { id: 'pending', label: 'Pending' },
   { id: 'approved', label: 'Approved' },
   { id: 'rejected', label: 'Rejected' },
+  { id: 'suspended', label: 'Suspended' },
 ];
 
 export const AppBadge = ({ status }: { status: AppStatus }) => (
-  <span className={`badge ${status === 'approved' ? 'green' : status === 'pending' ? 'gold' : 'red'}`}>{status === 'pending' ? 'Pending' : status === 'approved' ? 'Approved' : 'Rejected'}</span>
+  <span className={`badge ${status === 'approved' ? 'green' : status === 'pending' ? 'gold' : status === 'suspended' ? 'gray' : 'red'}`}>{status[0].toUpperCase() + status.slice(1)}</span>
 );
 
 export default function Verification() {
@@ -87,7 +88,7 @@ export default function Verification() {
           <Empty
             icon={tab === 'pending' ? 'checkCircle' : 'users'}
             title={tab === 'pending' ? 'No applications waiting' : `No ${tab} applications`}
-            body={tab === 'pending' ? 'People who register as Instructor in the mobile app appear here.' : undefined}
+            body={tab === 'pending' ? 'People who register as Instructor (Instructor Portal or mobile app) appear here.' : undefined}
           />
         )}
       </div>
@@ -102,7 +103,7 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
   const name = p?.full_name || p?.email || 'this applicant';
   const history = useData(() => fetchVerificationHistory(app.user_id), [app.user_id]);
   const [reason, setReason] = useState(app.rejection_reason);
-  const [confirm, setConfirm] = useState<'approve' | 'reject' | null>(null);
+  const [confirm, setConfirm] = useState<'approve' | 'reject' | 'suspend' | 'reactivate' | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<{ title: string; body: string } | null>(null);
 
@@ -115,6 +116,33 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
   };
 
   if (done) return <Success title={done.title} body={done.body} onDone={onClose} />;
+  if (confirm === 'suspend' || confirm === 'reactivate') {
+    const suspend = confirm === 'suspend';
+    return (
+      <Confirm
+        title={suspend ? `Suspend ${name}?` : `Reactivate ${name}?`}
+        body={
+          suspend
+            ? 'They keep their account, but lose the Instructor Portal, the mobile instructor screens, their classes and schedule until you reactivate them. They are notified with your reason.'
+            : 'Their instructor access on the website and the mobile app returns right away, and they are notified.'
+        }
+        confirmLabel={suspend ? 'Suspend instructor' : 'Reactivate instructor'}
+        danger={suspend}
+        onClose={() => setConfirm(null)}
+        onConfirm={async () => {
+          await setInstructorSuspension(app.user_id, suspend, suspend ? reason : '');
+          await refresh();
+          setDone(suspend ? { title: 'Instructor suspended', body: `${name} has been notified with your reason.` } : { title: 'Instructor reactivated', body: `${name} can use the Instructor Portal and the mobile app again.` });
+        }}>
+        {suspend ? (
+          <div className="note red">
+            <Icon name="info" />
+            <div>Reason sent: “{reason.trim()}”</div>
+          </div>
+        ) : null}
+      </Confirm>
+    );
+  }
   if (confirm) {
     const approve = confirm === 'approve';
     return (
@@ -157,12 +185,22 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
           <button className="btn btn-secondary" onClick={onClose}>
             Close
           </button>
-          {app.status !== 'rejected' ? (
+          {app.status === 'approved' ? (
+            <button className="btn btn-danger" onClick={() => (reason.trim() ? setConfirm('suspend') : setErr('Write a reason for the suspension first.'))}>
+              Suspend
+            </button>
+          ) : null}
+          {app.status === 'suspended' ? (
+            <button className="btn btn-primary" onClick={() => setConfirm('reactivate')}>
+              <Icon name="checkCircle" size={16} /> Reactivate
+            </button>
+          ) : null}
+          {app.status === 'pending' || app.status === 'approved' ? (
             <button className="btn btn-danger" onClick={() => (reason.trim() ? setConfirm('reject') : setErr('Write a reason for the rejection first.'))}>
               Reject
             </button>
           ) : null}
-          {app.status !== 'approved' ? (
+          {app.status === 'pending' || app.status === 'rejected' ? (
             <button className="btn btn-primary" onClick={() => setConfirm('approve')} disabled={!app.employee_id || !app.department}>
               <Icon name="checkCircle" size={16} /> Approve
             </button>
@@ -211,15 +249,15 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
           <div>The application is incomplete. The applicant can finish it in the mobile app before you approve it.</div>
         </div>
       ) : null}
-      {app.status !== 'rejected' ? (
-        <Field label="Reason (required to reject)" hint="Shown to the applicant in the mobile app.">
+      {app.status === 'pending' || app.status === 'approved' ? (
+        <Field label={app.status === 'approved' ? 'Reason (required to suspend or reject)' : 'Reason (required to reject)'} hint="Shown to the instructor on the website and in the mobile app.">
           <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Employee ID not found in HR records." />
         </Field>
       ) : (
         <div className="note red">
           <Icon name="alert" />
           <div>
-            <b>Rejected:</b> {app.rejection_reason}
+            <b>{app.status === 'suspended' ? 'Suspended' : 'Rejected'}:</b> {app.rejection_reason}
           </div>
         </div>
       )}

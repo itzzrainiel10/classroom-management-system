@@ -90,6 +90,7 @@ export default function StudentHome() {
           <MenuRow icon="create" title="Quizzes" body="Answer quizzes and see your scores." onPress={() => router.push('/student/quizzes')} />
           <MenuRow icon="document-text" title="Assignments" body="Keep track of your coursework." onPress={() => router.push('/student/assignments')} />
           <MenuRow icon="megaphone" title="Announcements" body="The latest from your instructor." onPress={() => router.push('/student/announcements')} />
+          <MenuRow icon="checkmark-done" title="Attendance" body="Your attendance in each class." onPress={() => router.push('/student/attendance')} />
           <MenuRow icon="calendar" title="Schedule" body="Your week at a glance." onPress={() => router.push('/student/schedule')} />
         </View>
       </Screen>

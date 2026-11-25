@@ -73,6 +73,7 @@ export default function InstructorHome() {
           <MenuRow icon="document-attach" title="Post Assignments" body="Share the next learning activity." onPress={() => router.push('/instructor/assignment')} />
           <MenuRow icon="megaphone" title="Announcements" body="Keep your class in the loop." onPress={() => router.push('/instructor/announcement')} />
           <MenuRow icon="calendar" title="Class Schedule" body="Plan your week of teaching." onPress={() => router.push('/instructor/schedule')} />
+          <MenuRow icon="checkmark-done" title="Attendance" body="Mark students present or absent." onPress={() => router.push('/instructor/attendance')} />
           <MenuRow icon="bar-chart" title="Monitor Results" body="Review scores and completion." onPress={() => router.push('/instructor/results')} />
           <MenuRow icon="people" title="Manage classes" body="Students, activities & settings." onPress={() => router.push('/instructor/classes')} />
         </View>

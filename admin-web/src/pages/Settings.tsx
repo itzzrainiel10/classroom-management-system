@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
-import { ROOM_TYPES, SEMESTERS, deleteRoom, saveRoom, saveSettings, type Room, type RoomType } from '../lib/data';
-import { semesterRange } from '../lib/format';
+import { ROOM_TYPES, SEMESTERS, deleteRoom, saveRoom, saveSettings, type Room, type RoomType } from '../services/data';
+import { semesterRange } from '../services/format';
 
 export default function Settings() {
   const { w, refresh } = useWorkspace();

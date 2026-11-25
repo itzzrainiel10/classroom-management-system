@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Avatar, CardHead, Empty, Field, PageHeader, RoleChip, StatusBadge, Success } from '../components/ui';
-import { classLabel, rolesOf, setStudentSection, updateUser, userRows } from '../lib/data';
-import { fmtDate, splitName } from '../lib/format';
+import { classLabel, rolesOf, setStudentSection, updateUser, userRows } from '../services/data';
+import { fmtDate, splitName } from '../services/format';
 
 export default function EditUser() {
   const { id } = useParams();
@@ -28,7 +28,7 @@ export default function EditUser() {
   const [done, setDone] = useState(false);
 
   if (!profile || !row) {
-    return <Empty icon="user" title="User not found" body="This account may have been removed."><Link className="btn btn-secondary" to="/users">Back to users</Link></Empty>;
+    return <Empty icon="user" title="User not found" body="This account may have been removed."><Link className="btn btn-secondary" to="/admin/users">Back to users</Link></Empty>;
   }
 
   const enrolled = w.enrollments.filter((e) => e.email === profile.email).map((e) => w.classes.find((c) => c.id === e.class_id)).filter(Boolean);
@@ -59,7 +59,7 @@ export default function EditUser() {
         subtitle="Update profile information."
         actions={
           <>
-            <Link to="/users" className="btn btn-secondary">
+            <Link to="/admin/users" className="btn btn-secondary">
               Cancel
             </Link>
             <button className="btn btn-primary" onClick={() => void save()} disabled={busy}>
@@ -136,7 +136,7 @@ export default function EditUser() {
           <div className="list">
             {classes.map((c) =>
               c ? (
-                <button key={c.id} className="list-item" style={{ border: 0, background: 'none', textAlign: 'left', cursor: 'pointer', width: '100%' }} onClick={() => navigate(`/classes?class=${c.id}`)}>
+                <button key={c.id} className="list-item" style={{ border: 0, background: 'none', textAlign: 'left', cursor: 'pointer', width: '100%' }} onClick={() => navigate(`/admin/classes?class=${c.id}`)}>
                   <span className="ic">
                     <Icon name="book" size={16} />
                   </span>
@@ -156,7 +156,7 @@ export default function EditUser() {
         )}
       </div>
 
-      {done ? <Success title="User updated" body={`${first} ${last}’s profile has been saved.`} onDone={() => navigate('/users')} /> : null}
+      {done ? <Success title="User updated" body={`${first} ${last}’s profile has been saved.`} onDone={() => navigate('/admin/users')} /> : null}
     </>
   );
 }

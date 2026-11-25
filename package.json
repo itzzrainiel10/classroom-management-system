@@ -8,7 +8,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:admin": "npm --prefix admin-web run dev",
+    "dev:instructor": "npm --prefix instructor-web run dev",
+    "dev:websites": "node scripts/dev.mjs admin instructor",
+    "dev:all": "node scripts/dev.mjs admin instructor mobile",
+    "install:websites": "npm --prefix admin-web install && npm --prefix instructor-web install"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

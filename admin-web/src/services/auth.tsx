@@ -3,9 +3,13 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { supabase } from './supabase';
 
+/** Address of the separate Instructor website (shown to instructors who try to sign in here). */
+export const INSTRUCTOR_SITE = (import.meta.env.VITE_INSTRUCTOR_SITE_URL as string | undefined) ?? 'http://localhost:5174';
+
 type AuthValue = {
   status: 'loading' | 'signed-out' | 'signed-in';
   session: Session | null;
+  /** Read from the database (is_admin()), never from the browser. */
   isAdmin: boolean;
   name: string;
   email: string;
@@ -17,37 +21,37 @@ type AuthValue = {
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
-export const NOT_ADMIN = 'This account is not an administrator. Instructors and students use the mobile app.';
+export const NOT_ADMIN = `This account is not an administrator. Instructors use the Instructor website (${INSTRUCTOR_SITE}); students use the mobile app.`;
+
+type Account = { isAdmin: boolean; name: string };
+const NONE: Account = { isAdmin: false, name: '' };
+
+async function loadAccount(s: Session): Promise<Account> {
+  const [admin, profile] = await Promise.all([supabase.rpc('is_admin'), supabase.from('profiles').select('full_name').eq('id', s.user.id).maybeSingle()]);
+  return { isAdmin: admin.data === true, name: profile.data?.full_name || String(s.user.user_metadata?.full_name ?? '') || s.user.email || '' };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [name, setName] = useState('');
+  const [account, setAccount] = useState<Account>(NONE);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let alive = true;
+    // Session and role are published together, so no page sees "signed in" without knowing the role.
     const apply = async (s: Session | null) => {
-      setSession(s);
-      if (!s) {
-        setIsAdmin(false);
-        setName('');
-        setReady(true);
-        return;
-      }
-      const [admin, profile] = await Promise.all([
-        supabase.rpc('is_admin'),
-        supabase.from('profiles').select('full_name').eq('id', s.user.id).maybeSingle(),
-      ]);
+      const a = s ? await loadAccount(s) : NONE;
       if (!alive) return;
-      setIsAdmin(admin.data === true);
-      setName(profile.data?.full_name || String(s.user.user_metadata?.full_name ?? '') || s.user.email || '');
+      setSession(s);
+      setAccount(a);
       setReady(true);
     };
-    supabase.auth.getSession().then(({ data }) => apply(data.session));
+    supabase.auth.getSession().then(({ data }) => {
+      void apply(data.session);
+    });
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'TOKEN_REFRESHED') return setSession(s);
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => apply(s), 0);
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => void apply(s), 0);
     });
     return () => {
       alive = false;
@@ -58,15 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthValue = {
     status: !ready ? 'loading' : session ? 'signed-in' : 'signed-out',
     session,
-    isAdmin,
-    name,
+    ...account,
     email: session?.user.email ?? '',
     async signIn(email, password) {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) return error.message === 'Invalid login credentials' ? 'Wrong email or password.' : error.message;
-      const admin = await supabase.rpc('is_admin');
-      if (admin.data !== true) {
-        await supabase.auth.signOut();
+      if (!(await loadAccount(data.session)).isAdmin) {
+        await supabase.auth.signOut({ scope: 'local' });
         return NOT_ADMIN;
       }
       return null;
@@ -74,18 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signInWithGoogle() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        // /overview is on the auth redirect allow-list and forwards to /admin/dashboard.
         options: { redirectTo: `${window.location.origin}/overview`, queryParams: { prompt: 'select_account' } },
       });
       return error?.message ?? null;
     },
     async sendReset(email) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/reset-password` });
       return error?.message ?? null;
     },
     async signOut() {
-      await supabase.auth.signOut();
+      // 'local' ends only this browser's admin session (not the same user's sessions elsewhere).
+      await supabase.auth.signOut({ scope: 'local' });
     },
   };
 

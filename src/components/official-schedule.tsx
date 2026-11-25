@@ -228,23 +228,31 @@ export function WeekPlanner({ classes, extras = [], term }: { classes: OfficialC
 /** Compact weekly timetable as a table: Day · Time · Subject · Section · Room (like the admin website). */
 export function ScheduleTable({ classes, emptyBody }: { classes: OfficialClass[]; emptyBody: string }) {
   if (!classes.length) return <Empty icon="calendar-outline" title="No official classes yet" body={emptyBody} />;
-  const rows = [...classes].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
+  // Grouped by section first, then day and time.
+  const rows = [...classes].sort(
+    (a, b) => a.section_name.localeCompare(b.section_name) || a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time),
+  );
   const short = (t: string) => fmtTime(t).replace(' AM', 'a').replace(' PM', 'p');
+  let group = -1;
   return (
     <View style={styles.table}>
       <View style={[styles.tr, styles.thead]}>
+        <Text style={[styles.th, styles.cSec]}>Section</Text>
         <Text style={[styles.th, styles.cDay]}>Day</Text>
         <Text style={[styles.th, styles.cTime]}>Time</Text>
         <Text style={[styles.th, styles.cSubj]}>Subject</Text>
-        <Text style={[styles.th, styles.cSec]}>Section</Text>
         <Text style={[styles.th, styles.cRoom]}>Room</Text>
       </View>
       {rows.map((c, i) => {
-        const newDay = i === 0 || rows[i - 1].day_of_week !== c.day_of_week;
-        const dayIdx = c.day_of_week - 1;
+        const newSection = i === 0 || rows[i - 1].section_name !== c.section_name;
+        if (newSection) group++;
+        const newDay = newSection || rows[i - 1].day_of_week !== c.day_of_week;
         return (
-          <View key={c.id} style={[styles.tr, newDay && i > 0 && styles.dayBreak, dayIdx % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
-            <Text style={[styles.td, styles.cDay, { fontWeight: '700' }]}>{newDay ? DAY_SHORT[dayIdx] : ''}</Text>
+          <View key={c.id} style={[styles.tr, newSection && i > 0 && styles.dayBreak, group % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
+            <Text style={[styles.td, styles.cSec, { fontWeight: '700', color: colors.text }]} numberOfLines={2}>
+              {newSection ? c.section_name : ''}
+            </Text>
+            <Text style={[styles.td, styles.cDay]}>{newDay ? DAY_SHORT[c.day_of_week - 1] : ''}</Text>
             <Text style={[styles.td, styles.cTime]}>
               {short(c.start_time)}–{short(c.end_time)}
             </Text>
@@ -254,9 +262,6 @@ export function ScheduleTable({ classes, emptyBody }: { classes: OfficialClass[]
                 {c.subject_name}
               </Text>
             </View>
-            <Text style={[styles.td, styles.cSec]} numberOfLines={2}>
-              {c.section_name}
-            </Text>
             <Text style={[styles.td, styles.cRoom]} numberOfLines={2}>
               {c.room}
             </Text>

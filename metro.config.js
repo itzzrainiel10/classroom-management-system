@@ -7,9 +7,13 @@ const config = getDefaultConfig(__dirname);
 // Expo SQLite on web ships a .wasm file and needs cross-origin isolation headers.
 config.resolver.assetExts.push('wasm');
 
-// web/ is the separate admin portal (Vite) with its own node_modules: keep it out of the mobile bundle.
-const webDir = path.join(__dirname, 'web').replace(/[/\\]/g, '[/\\\\]');
-config.resolver.blockList = [...[].concat(config.resolver.blockList ?? []), new RegExp(`^${webDir}[/\\\\].*`)];
+// admin-web/ and instructor-web/ are separate websites (Vite) with their own node_modules:
+// keep them out of the mobile bundle.
+const webDirs = ['admin-web', 'instructor-web'].map((d) => path.join(__dirname, d).replace(/[/\\]/g, '[/\\\\]'));
+config.resolver.blockList = [
+  ...[].concat(config.resolver.blockList ?? []),
+  ...webDirs.map((d) => new RegExp(`^${d}[/\\\\].*`)),
+];
 config.server.enhanceMiddleware = (middleware) => (req, res, next) => {
   res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');

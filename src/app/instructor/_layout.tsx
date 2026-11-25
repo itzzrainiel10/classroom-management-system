@@ -13,6 +13,7 @@ export default function InstructorLayout() {
       <Stack.Screen name="assignment" options={{ title: 'Post assignment' }} />
       <Stack.Screen name="announcement" options={{ title: 'Announcements' }} />
       <Stack.Screen name="schedule-new" options={{ title: 'Extra class meeting' }} />
+      <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
       <Stack.Screen name="grade/[id]" options={{ title: 'Grade answers' }} />
     </Stack>

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
-import { deleteSubject, saveSubject, type Subject } from '../lib/data';
+import { deleteSubject, saveSubject, type Subject } from '../services/data';
 
 export default function Subjects() {
   const { w, refresh } = useWorkspace();

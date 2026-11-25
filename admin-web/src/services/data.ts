@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
-
 import { pct } from './format';
 import { supabase } from './supabase';
 
@@ -7,7 +5,7 @@ import { supabase } from './supabase';
 
 export type Role = 'admin' | 'instructor' | 'student';
 export type Profile = { id: string; full_name: string; email: string; student_number: string; status: 'active' | 'suspended'; section_id: string | null; created_at: string };
-export type AppStatus = 'pending' | 'approved' | 'rejected';
+export type AppStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type InstructorProfile = {
   user_id: string;
   employee_id: string;
@@ -94,28 +92,8 @@ function must<T>(res: { data: T | null; error: { message: string } | null }): T 
 
 /* ---------- Small hook for loading data ---------- */
 
-export function useData<T>(load: () => Promise<T>, deps: unknown[] = []) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const run = useCallback(load, deps);
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      setData(await run());
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [run]);
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-  return { data, error, loading, refresh };
-}
+// Kept here so existing pages can keep importing it from services/data.
+export { useData } from '../hooks/useData';
 
 /* ---------- Workspace snapshot (everything the admin pages read) ---------- */
 
@@ -203,7 +181,7 @@ export function userRows(w: Workspace): UserRow[] {
       isAdmin: roles.includes('admin'),
       section: section || '—',
       status: p.status === 'suspended' ? 'Suspended' : 'Active',
-      application: app && app.status !== 'approved' && role !== 'instructor' ? app.status : null,
+      application: app && (app.status === 'suspended' || (app.status !== 'approved' && role !== 'instructor')) ? app.status : null,
       student_number: p.student_number,
       created_at: p.created_at,
     };
@@ -311,6 +289,11 @@ export async function fetchActivity(sinceIso: string): Promise<Activity[]> {
 
 export async function reviewInstructor(userId: string, approve: boolean, reason: string) {
   must(await supabase.rpc('review_instructor', { _user_id: userId, _approve: approve, _reason: reason }));
+}
+
+/** Suspend (reason required) or reactivate an approved instructor. Admin-only; checked and recorded by the database. */
+export async function setInstructorSuspension(userId: string, suspend: boolean, reason: string) {
+  must(await supabase.rpc('set_instructor_suspension', { _user_id: userId, _suspend: suspend, _reason: reason }));
 }
 
 /** Short-lived link to a private proof document (admins only, enforced by storage rules). */

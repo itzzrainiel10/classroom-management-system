@@ -76,6 +76,7 @@ const BLOCKED = {
   suspended: 'This account has been suspended. Please contact your administrator.',
   admin: 'Administrator accounts use the web admin portal, not the mobile app.',
   norole: 'This account has no role yet. Please contact your administrator.',
+  instructorSuspended: 'Your instructor access is suspended by an administrator. Please contact your administrator.',
 } as const;
 
 /** An instructor application an administrator hasn't approved (yet). */
@@ -118,6 +119,11 @@ async function loadAccount(session: Session): Promise<Account> {
     }
     const role: Role | null = list.includes('instructor') ? 'instructor' : list.includes('student') ? 'student' : null;
     let application: Application | null = null;
+    if (role === 'instructor') {
+      // Suspended by an administrator: same account, but no instructor features (also enforced by the database).
+      const ip = await supabase.from('instructor_profiles').select('status').eq('user_id', uid).maybeSingle();
+      if (ip.data?.status === 'suspended') return { role: null, name, application: null, blocked: 'instructorSuspended' };
+    }
     if (role !== 'instructor') {
       const app = await supabase.from('instructor_profiles').select('status, rejection_reason').eq('user_id', uid).maybeSingle();
       if (app.data && app.data.status !== 'approved' && !(role === 'student' && app.data.status === 'rejected')) {

@@ -1,8 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
-import type { UserRow } from '../lib/data';
-import { initials } from '../lib/format';
+import type { UserRow } from '../services/data';
+import { initials } from '../services/format';
 import { Icon, type IconName } from './icons';
+import { toast } from './toast';
 
 export function PageHeader({ title, subtitle, actions }: { eyebrow?: string; title: string; subtitle?: string; actions?: ReactNode }) {
   return (
@@ -16,13 +18,29 @@ export function PageHeader({ title, subtitle, actions }: { eyebrow?: string; tit
   );
 }
 
-export function Tile({ label, value, sub }: { label: string; value: string; sub?: string; icon?: IconName; hero?: boolean }) {
-  return (
-    <div className="card tile">
-      <div className="label">{label}</div>
+/** Statistic card: icon, label, big number and a short note. `to` makes the whole card a link. */
+export function Tile({ label, value, sub, icon, tone, to }: { label: string; value: string; sub?: string; icon?: IconName; hero?: boolean; tone?: 'ok' | 'warn' | 'neutral'; to?: string }) {
+  const inner = (
+    <>
+      <div className="label">
+        {icon ? (
+          <span className="ic">
+            <Icon name={icon} size={16} />
+          </span>
+        ) : null}
+        {label}
+      </div>
       <div className="value">{value}</div>
       {sub ? <div className="sub">{sub}</div> : null}
-    </div>
+    </>
+  );
+  const cls = `card tile${tone ? ` tone-${tone}` : ''}`;
+  return to ? (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={cls}>{inner}</div>
   );
 }
 
@@ -61,7 +79,7 @@ export function RoleChip({ role, isAdmin }: { role: UserRow['role']; isAdmin?: b
 }
 
 export function StatusBadge({ status }: { status: UserRow['status'] }) {
-  const tone = status === 'Active' ? 'green' : status === 'Invited' ? 'gold' : 'red';
+  const tone = status === 'Active' ? 'green' : status === 'Invited' ? 'gold' : 'gray';
   return <span className={`badge ${tone}`}>{status}</span>;
 }
 
@@ -78,10 +96,14 @@ export function Empty({ icon, title, body, children }: { icon: IconName; title: 
   );
 }
 
-export function Loading() {
+/** Loading placeholder (shimmering skeleton blocks). */
+export function Loading({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="loading">
-      <div className="spinner" />
+    <div className="loading" aria-busy="true" aria-label="Loading">
+      <div className="skeleton" style={{ height: 22, width: '34%' }} />
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="skeleton" style={{ height: 44, opacity: 1 - i * 0.18 }} />
+      ))}
     </div>
   );
 }
@@ -115,28 +137,29 @@ export function Modal({ title, sub, onClose, children, footer }: { title: string
   );
 }
 
-/** "✓ Done" confirmation shown after a change is saved. */
+/** Confirmation after a change is saved: shows a toast, then continues (onDone) right away. */
 export function Success({ title, body, onDone }: { title: string; body: string; onDone: () => void }) {
-  return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onDone()}>
-      <div className="modal success" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="check">
-          <Icon name="check" size={26} strokeWidth={2.5} />
-        </div>
-        <h3>{title}</h3>
-        <p>{body}</p>
-        <button className="btn btn-primary btn-block" onClick={onDone} autoFocus>
-          Done
-        </button>
-      </div>
-    </div>
-  );
+  const shown = useRef(false);
+  useEffect(() => {
+    if (shown.current) return;
+    shown.current = true;
+    toast.success(title, body);
+    onDone();
+  }, [title, body, onDone]);
+  return null;
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: ReactNode }) {
   return (
     <label className="field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {required ? (
+          <span className="req" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </span>
       {children}
       {hint ? <small>{hint}</small> : null}
     </label>

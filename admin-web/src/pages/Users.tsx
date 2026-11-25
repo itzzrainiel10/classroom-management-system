@@ -2,19 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
-import { cancelInvitation, classLabel, inviteUser, userRows } from '../lib/data';
-import { fmtNum } from '../lib/format';
+import { cancelInvitation, classLabel, inviteUser, userRows } from '../services/data';
+import { fmtNum } from '../services/format';
 
 const PAGE = 10;
 type Tab = 'all' | 'instructor' | 'student';
 
-export default function Users() {
+/** All users, or (Student Management) only one role when `only` is set. */
+export default function Users({ only }: { only?: 'student' | 'instructor' } = {}) {
   const { w, refresh } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('all');
+  const [tab, setTab] = useState<Tab>(only ?? 'all');
+  useEffect(() => setTab(only ?? 'all'), [only]);
   const [q, setQ] = useState(params.get('q') ?? '');
   const [page, setPage] = useState(0);
   const [inviting, setInviting] = useState(false);
@@ -35,8 +37,8 @@ export default function Users() {
   return (
     <>
       <PageHeader
-        title="Users"
-        subtitle="Everyone with an account. Click a person to edit their details."
+        title={only === 'student' ? 'Students' : 'Users'}
+        subtitle={only === 'student' ? 'Every student account, their section and status. Click a student to edit.' : 'Everyone with an account. Click a person to edit their details.'}
         actions={
           <button className="btn btn-primary" onClick={() => setInviting(true)}>
             <Icon name="plus" size={16} /> Add user
@@ -47,7 +49,7 @@ export default function Users() {
       <div className="card">
         <div className="card-head" style={{ flexWrap: 'wrap' }}>
           <div className="tabs" role="tablist">
-            {(['all', 'instructor', 'student'] as Tab[]).map((t) => (
+            {(only ? [only] : (['all', 'instructor', 'student'] as Tab[])).map((t) => (
               <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)} role="tab" aria-selected={tab === t}>
                 {t === 'all' ? 'All users' : t === 'instructor' ? 'Instructors' : 'Students'}
                 <span className="n">{fmtNum(counts[t])}</span>
@@ -86,7 +88,7 @@ export default function Users() {
                     className={u.id ? 'clickable' : undefined}
                     onClick={(e) => {
                       // whole row opens the user; buttons/links inside keep their own action
-                      if (u.id && !(e.target as HTMLElement).closest('a, button')) navigate(`/users/${u.id}`);
+                      if (u.id && !(e.target as HTMLElement).closest('a, button')) navigate(`/admin/users/${u.id}`);
                     }}>
                     <td>
                       <Person name={u.name} sub={u.email} />
@@ -94,7 +96,7 @@ export default function Users() {
                     <td>
                       {u.application ? (
                         <span className={`badge ${u.application === 'pending' ? 'gold' : 'red'}`} style={{ marginRight: 6 }}>
-                          Instructor {u.application === 'pending' ? 'applicant' : 'rejected'}
+                          Instructor {u.application === 'pending' ? 'applicant' : u.application}
                         </span>
                       ) : null}
                       {u.application && u.role === 'none' ? null : <RoleChip role={u.role} isAdmin={u.isAdmin} />}
@@ -111,7 +113,7 @@ export default function Users() {
                     </td>
                     <td className="num">
                       {u.id ? (
-                        <Link to={`/users/${u.id}`} className="btn btn-secondary btn-sm">
+                        <Link to={`/admin/users/${u.id}`} className="btn btn-secondary btn-sm">
                           Edit
                         </Link>
                       ) : (

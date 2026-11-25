@@ -12,6 +12,7 @@ export default function StudentLayout() {
       <Stack.Screen name="quiz/result/[id]" options={{ title: 'Quiz results', headerBackVisible: false, gestureEnabled: false }} />
       <Stack.Screen name="assignments" options={{ title: 'Assignments' }} />
       <Stack.Screen name="announcements" options={{ title: 'Announcements' }} />
+      <Stack.Screen name="attendance" options={{ title: 'My attendance' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
     </Stack>
   );

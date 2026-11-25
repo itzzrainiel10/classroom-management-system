@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, Field, Modal, PageHeader, Person, Success, Tile } from '../components/ui';
-import { classStats, createClass, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../lib/data';
-import { fmtNum, fmtPct } from '../lib/format';
-import { supabase } from '../lib/supabase';
+import { classStats, createClass, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../services/data';
+import { fmtNum, fmtPct } from '../services/format';
+import { supabase } from '../services/supabase';
 
 type Dialog = 'create' | 'enroll' | 'section' | null;
 
@@ -109,7 +109,7 @@ export default function Classes() {
                         <td className="num">
                           <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                             {p ? (
-                              <Link className="btn btn-secondary btn-sm" to={`/users/${p.id}`}>
+                              <Link className="btn btn-secondary btn-sm" to={`/admin/users/${p.id}`}>
                                 View
                               </Link>
                             ) : null}

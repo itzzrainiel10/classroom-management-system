@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 
 import { Icon } from '../components/icons';
 import { Empty, ErrorNote, Loading, PageHeader } from '../components/ui';
-import { fetchActivity, useData } from '../lib/data';
-import { downloadCsv, fmtDateTime, startOfDay } from '../lib/format';
+import { fetchActivity, useData } from '../services/data';
+import { downloadCsv, fmtDateTime, startOfDay } from '../services/format';
 import { activityIcon, cap } from './Overview';
 
 export const RANGES = {
@@ -24,6 +24,8 @@ const CATEGORIES: Record<string, string> = {
   schedule: 'Schedules',
   user: 'Users',
   sign_in: 'Sign-ins',
+  attendance: 'Attendance',
+  verification: 'Verification',
 };
 
 export default function ActivityLog() {

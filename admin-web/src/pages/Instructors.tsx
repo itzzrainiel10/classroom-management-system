@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
-import { useWorkspace } from '../components/Shell';
+import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, PageHeader, Person, Tile } from '../components/ui';
-import { rolesOf } from '../lib/data';
-import { fmtNum, minutesOf } from '../lib/format';
+import { rolesOf } from '../services/data';
+import { fmtNum, minutesOf } from '../services/format';
 
 export default function Instructors() {
   const { w } = useWorkspace();
@@ -73,7 +73,7 @@ export default function Instructors() {
                 {shown.map((r) => (
                   <tr key={r.p.id}>
                     <td>
-                      <Link to={`/users/${r.p.id}`} title="Open profile">
+                      <Link to={`/admin/users/${r.p.id}`} title="Open profile">
                         <Person name={r.p.full_name || r.p.email} sub={r.p.email} />
                       </Link>
                     </td>
@@ -87,7 +87,7 @@ export default function Instructors() {
                     <td className="num">{r.hours}</td>
                     <td className="num">
                       <div className="row" style={{ justifyContent: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>
-                        <Link className="btn btn-primary btn-sm" to={`/schedules?instructor=${r.p.id}`}>
+                        <Link className="btn btn-primary btn-sm" to={`/admin/schedules?instructor=${r.p.id}`}>
                           Schedule
                         </Link>
                       </div>

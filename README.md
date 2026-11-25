@@ -80,16 +80,48 @@ Everything the server needs lives in `supabase/`:
 
 A new Google account gets the role of the screen it was used on (Student or Instructor).
 
-## Admin web portal (`web/`)
+## Websites: `admin-web/` and `instructor-web/`
 
-A separate website for administrators. It uses the **same Supabase project** as the mobile app, so both
-always show the same users, classes, quizzes and results.
+Two separate websites (React + Vite), each with its own login, layout, routes and styling. Both use the
+**same Supabase project** (database, login and security rules) as the mobile app, so all three always show
+the same accounts, schedules, classes, quizzes and results.
+
+```text
+classroom-management-system/
+├── admin-web/          Admin website      → http://localhost:5173   (administrators only)
+│   └── src/  components/ layouts/ pages/ services/ hooks/
+├── instructor-web/     Instructor website → http://localhost:5174   (approved instructors only)
+│   └── src/  components/ layouts/ pages/ services/ hooks/
+├── src/ app.json …     Mobile app (Expo)  → npx expo start
+├── supabase/           Backend: migrations (tables, row-level security, server functions), tests, config
+└── scripts/dev.mjs     Starts several dev servers at once
+```
+
+Run them separately:
 
 ```bash
-cd web
-npm install
-npm run dev        # http://localhost:5173
+cd admin-web && npm install && npm run dev          # http://localhost:5173
+cd instructor-web && npm install && npm run dev     # http://localhost:5174
 ```
+
+…or together from the project root:
+
+```bash
+npm run install:websites   # first time only
+npm run dev:websites       # both websites
+npm run dev:all            # both websites + the Expo app
+```
+
+Both can be open at the same time in one browser. They run on different ports (separate browser origins)
+and keep their sessions under different keys, so an instructor signing in never signs out the admin.
+There is no separate API server: the backend is the Supabase project, which checks the role on every
+request (row-level security and admin-only functions). The page guards in the websites are only a convenience.
+
+**Instructor website pages:** Dashboard, My Profile, My Subjects, My Sections, My Teaching Schedule,
+Weekly Schedule, Quizzes & Exams, Assignments, Announcements, Monitor Results, Notifications, Account Settings.
+Instructors can also register there; the application starts as **Pending** until an admin approves it.
+
+### Admin website (`admin-web/`)
 
 | Page | What it does |
 | --- | --- |
