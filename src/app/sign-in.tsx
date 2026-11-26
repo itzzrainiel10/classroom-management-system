@@ -33,7 +33,9 @@ export default function SignIn() {
   const submit = async () => {
     if (mode === 'up' && !name.trim()) return setMessage({ text: 'Enter your full name.', ok: false });
     if (!email.includes('@')) return setMessage({ text: 'Enter your email address.', ok: false });
-    if (password.length < 6) return setMessage({ text: 'Password must be at least 6 characters.', ok: false });
+    if (!password) return setMessage({ text: 'Enter your password.', ok: false });
+    if (mode === 'up' && (password.length < 8 || !/[a-z]/i.test(password) || !/[0-9]/.test(password)))
+      return setMessage({ text: 'Use at least 8 characters with letters and numbers.', ok: false });
     if (mode === 'up' && role === 'student' && sections?.length && !sectionId) return setMessage({ text: 'Choose your section.', ok: false });
     if (mode === 'up' && role === 'instructor') {
       if (!employeeId.trim()) return setMessage({ text: 'Enter your employee / faculty ID.', ok: false });

@@ -125,7 +125,7 @@ export function ResetPassword() {
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (pw.length < 8) return setMsg({ text: 'Use at least 8 characters.', ok: false });
+    if (pw.length < 8 || !/[a-z]/i.test(pw) || !/[0-9]/.test(pw)) return setMsg({ text: 'Use at least 8 characters with letters and numbers.', ok: false });
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);

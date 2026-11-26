@@ -506,3 +506,14 @@ a.list-item:hover, button.list-item:hover { background: #fafcfa; }
 .tabs a.tab-link.on { background: var(--card); color: var(--primary); box-shadow: var(--shadow-sm); }
 .tabs a.tab-link .n { font-weight: 500; color: var(--muted); margin-left: 5px; }
 .tab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--text-soft); }
+
+/* Schedules · By section */
+.sec-sched-list { display: flex; flex-direction: column; }
+.sec-sched { border-top: 1px solid var(--line); padding: 18px 0 6px; }
+.sec-sched:first-child { border-top: 0; padding-top: 4px; }
+.sec-sched-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 0 20px 12px; }
+.sec-sched-head h3 { margin: 0; font-size: 16px; }
+.sec-sched-head p { margin: 2px 0 0; color: var(--text-soft); font-size: 13px; }
+.sec-sched .table-wrap + .table-wrap { margin-top: 10px; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--bg); }

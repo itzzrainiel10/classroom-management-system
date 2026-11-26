@@ -10,6 +10,8 @@ DECLARE
   qz uuid := gen_random_uuid();
   n int; keys_visible int; att public.quiz_attempts; msg text := '';
 BEGIN
+  -- these checks build classes directly (rolled back at the end)
+  ALTER TABLE public.classes DISABLE TRIGGER classes_from_subject_only;
   INSERT INTO public.classes (id, instructor_id, code, title, section) VALUES (cls, inst, 'ITEC 116', 'Web Development', 'Dash 3');
   INSERT INTO public.class_students (class_id, email, full_name) VALUES (cls, 'Ana.Reyes@cvsu.edu.ph', 'Reyes, Ana');
 

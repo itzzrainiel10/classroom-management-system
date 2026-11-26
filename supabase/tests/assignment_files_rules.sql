@@ -12,6 +12,8 @@ DECLARE
   obj text;
   n int; msg text := '';
 BEGIN
+  -- these checks build classes directly (rolled back at the end)
+  ALTER TABLE public.classes DISABLE TRIGGER classes_from_subject_only;
   IF inst IS NULL OR stu IS NULL OR adm IS NULL THEN RAISE EXCEPTION 'RESULT: missing test accounts'; END IF;
   SELECT email INTO stu_email FROM public.profiles WHERE id = stu;
   obj := cls::text || '/' || gen_random_uuid()::text || '/handout.pdf';

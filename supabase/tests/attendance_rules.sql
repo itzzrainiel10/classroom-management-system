@@ -12,6 +12,8 @@ DECLARE
   cls uuid := gen_random_uuid();
   n int; s text; msg text := '';
 BEGIN
+  -- these checks build classes directly (rolled back at the end)
+  ALTER TABLE public.classes DISABLE TRIGGER classes_from_subject_only;
   IF adm IS NULL OR inst IS NULL OR stu IS NULL THEN RAISE EXCEPTION 'RESULT: missing test accounts'; END IF;
   -- Only one approved instructor? Use a made-up outsider account (not this class's instructor) instead.
   IF other IS NULL OR other = inst THEN other := gen_random_uuid(); END IF;

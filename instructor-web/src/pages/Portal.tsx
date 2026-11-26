@@ -547,7 +547,7 @@ export function InstructorSettings() {
 
   const savePw = async (e: FormEvent) => {
     e.preventDefault();
-    if (pw.length < 8) return setMsg({ text: 'Use at least 8 characters.', ok: false, which: 'pw' });
+    if (pw.length < 8 || !/[a-z]/i.test(pw) || !/[0-9]/.test(pw)) return setMsg({ text: 'Use at least 8 characters with letters and numbers.', ok: false, which: 'pw' });
     if (pw !== pw2) return setMsg({ text: 'The two passwords do not match.', ok: false, which: 'pw' });
     setBusy('pw');
     try {

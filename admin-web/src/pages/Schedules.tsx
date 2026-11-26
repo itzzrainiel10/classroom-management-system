@@ -54,7 +54,7 @@ export function conflictsOf(w: Workspace, v: ScheduleInput) {
 export default function Schedules() {
   const { w, refresh } = useWorkspace();
   const [params, setParams] = useSearchParams();
-  const [view, setView] = useState<'calendar' | 'table'>('calendar');
+  const [view, setView] = useState<'calendar' | 'table' | 'section'>(() => (params.get('section') ? 'section' : 'calendar'));
   const [q, setQ] = useState('');
   const [dept, setDept] = useState('all');
   const [year, setYear] = useState('all');
@@ -228,12 +228,17 @@ export default function Schedules() {
             <button className={view === 'table' ? 'on' : ''} onClick={() => setView('table')}>
               <Icon name="menu" size={15} /> Table
             </button>
+            <button className={view === 'section' ? 'on' : ''} onClick={() => setView('section')}>
+              <Icon name="school" size={15} /> By section
+            </button>
           </div>
         </div>
         {!rows.length ? (
           <Empty icon="calendar" title="No classes match" body="Change the filters, or add a schedule." />
         ) : view === 'calendar' ? (
           <WeekCalendar w={w} items={rows.map((r) => r.s)} onOpen={(s) => setEdit({ ...s })} />
+        ) : view === 'section' ? (
+          <BySection w={w} rows={rows} onOpen={(s) => setEdit({ ...s })} />
         ) : (
           <div className="table-wrap">
             <table>
@@ -327,7 +332,66 @@ export default function Schedules() {
   );
 }
 
-function WeekCalendar({ w, items, onOpen }: { w: Workspace; items: OfficialSchedule[]; onOpen: (s: OfficialSchedule) => void }) {
+/** One block per section: its own week timetable plus the list of subjects, instructors and rooms. */
+function BySection({ w, rows, onOpen }: { w: Workspace; rows: { s: OfficialSchedule; d: ReturnType<typeof describe> }[]; onOpen: (s: OfficialSchedule) => void }) {
+  const sections = w.sections
+    .filter((sec) => rows.some((r) => r.s.section_id === sec.id))
+    .sort((a, b) => a.year_level - b.year_level || a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return (
+    <div className="sec-sched-list">
+      {sections.map((sec) => {
+        const mine = rows.filter((r) => r.s.section_id === sec.id);
+        const subjectIds = [...new Set(mine.map((r) => r.s.subject_id))];
+        const units = subjectIds.reduce((n, id) => n + (w.subjects.find((x) => x.id === id)?.units ?? 0), 0);
+        const minutes = mine.reduce((n, r) => n + minutesOf(r.s.end_time) - minutesOf(r.s.start_time), 0);
+        const hrs = Math.round((minutes / 60) * 10) / 10;
+        return (
+          <section key={sec.id} className="sec-sched">
+            <div className="sec-sched-head">
+              <div>
+                <h3>{sec.name}</h3>
+                <p>
+                  {sec.program ? `${sec.program} · ` : ''}Year {sec.year_level} · {subjectIds.length} subject{subjectIds.length === 1 ? '' : 's'} · {units} unit{units === 1 ? '' : 's'} ·{' '}
+                  {hrs} hr{hrs === 1 ? '' : 's'}/week
+                </p>
+              </div>
+            </div>
+            <WeekCalendar w={w} items={mine.map((r) => r.s)} onOpen={onOpen} hideSection />
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Instructor</th>
+                    <th>Day & time</th>
+                    <th>Room</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mine.map(({ s, d }) => (
+                    <tr key={s.id} className="clickable" onClick={() => onOpen(s)}>
+                      <td>
+                        <b>{d.subjectCode}</b>
+                        <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{d.subjectName}</div>
+                      </td>
+                      <td>{d.instructor}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {DAYS[s.day_of_week - 1]} · {d.time}
+                      </td>
+                      <td>{d.room}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function WeekCalendar({ w, items, onOpen, hideSection = false }: { w: Workspace; items: OfficialSchedule[]; onOpen: (s: OfficialSchedule) => void; hideSection?: boolean }) {
   const days = items.some((s) => s.day_of_week === 7) ? 7 : 6;
   const start = Math.min(7 * 60, ...items.map((s) => Math.floor(minutesOf(s.start_time) / 60) * 60));
   const end = Math.max(18 * 60, ...items.map((s) => Math.ceil(minutesOf(s.end_time) / 60) * 60));
@@ -362,7 +426,7 @@ function WeekCalendar({ w, items, onOpen }: { w: Workspace; items: OfficialSched
                 return (
                   <button key={s.id} className={`week-slot ${tint(dsc.subjectCode)}`} style={{ top, height }} onClick={() => onOpen(s)} title={`${dsc.subjectCode} ${dsc.subjectName}\n${dsc.section} · ${dsc.time}\n${dsc.instructor} · ${dsc.room}`}>
                     <b>{dsc.subjectCode}</b>
-                    <small>{dsc.section}</small>
+                    {hideSection ? null : <small>{dsc.section}</small>}
                     <small>{dsc.time}</small>
                     <small>
                       {dsc.instructor} · {dsc.room}

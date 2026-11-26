@@ -49,7 +49,7 @@ export default function ForgotPassword() {
   const reset = async () => {
     if (!client) return;
     if (code.trim().length !== CODE_LEN) return setMessage({ text: `Enter the ${CODE_LEN}-digit code from the email.`, ok: false });
-    if (password.length < 6) return setMessage({ text: 'New password must be at least 6 characters.', ok: false });
+    if (password.length < 8 || !/[a-z]/i.test(password) || !/[0-9]/.test(password)) return setMessage({ text: 'Use at least 8 characters with letters and numbers.', ok: false });
     if (password !== confirm) return setMessage({ text: 'The two passwords do not match.', ok: false });
     setBusy(true);
     setMessage(null);

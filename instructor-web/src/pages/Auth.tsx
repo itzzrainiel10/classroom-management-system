@@ -137,7 +137,7 @@ function Register({ onDone, onCancel }: { onDone: (msg: string) => void; onCance
     e.preventDefault();
     if (!v.full_name.trim()) return setErr('Enter your full name.');
     if (!v.email.includes('@')) return setErr('Enter your email address.');
-    if (v.password.length < 8) return setErr('Use a password with at least 8 characters.');
+    if (v.password.length < 8 || !/[a-z]/i.test(v.password) || !/[0-9]/.test(v.password)) return setErr('Use at least 8 characters with letters and numbers.');
     if (!v.employee_id.trim()) return setErr('Enter your employee / faculty ID.');
     if (!v.department.trim()) return setErr('Enter your department.');
     if (!/^\+?[0-9][0-9 -]{6,18}$/.test(v.contact_number.trim())) return setErr('Enter a valid contact number (e.g. 0917 123 4567).');
@@ -236,7 +236,7 @@ export function ResetPassword() {
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (pw.length < 8) return setMsg({ text: 'Use at least 8 characters.', ok: false });
+    if (pw.length < 8 || !/[a-z]/i.test(pw) || !/[0-9]/.test(pw)) return setMsg({ text: 'Use at least 8 characters with letters and numbers.', ok: false });
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);

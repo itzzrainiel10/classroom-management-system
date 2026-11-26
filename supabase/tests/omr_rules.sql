@@ -15,6 +15,8 @@ DECLARE
   r public.omr_scans;
   n int; msg text := '';
 BEGIN
+  -- these checks build classes directly (rolled back at the end)
+  ALTER TABLE public.classes DISABLE TRIGGER classes_from_subject_only;
   IF inst IS NULL OR stu IS NULL THEN RAISE EXCEPTION 'RESULT: missing test accounts'; END IF;
   SELECT email INTO stu_email FROM public.profiles WHERE id = stu;
   INSERT INTO public.classes (id, instructor_id, code, title, section) VALUES (cls, inst, 'TEST 101', 'OMR test', 'TEST 1-1');
