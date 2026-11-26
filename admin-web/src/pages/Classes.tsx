@@ -4,13 +4,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, Field, Modal, PageHeader, Person, Success, Tile } from '../components/ui';
-import { classStats, createClass, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../services/data';
+import { classStats, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../services/data';
 import { fmtNum, fmtPct } from '../services/format';
 import { supabase } from '../services/supabase';
 
-type Dialog = 'create' | 'enroll' | 'section' | null;
+type Dialog = 'enroll' | 'section' | null;
 
-export default function Classes() {
+export default function Classes({ embedded = false }: { embedded?: boolean } = {}) {
   const { w, refresh } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -28,15 +28,24 @@ export default function Classes() {
 
   return (
     <>
-      <PageHeader
-        title="Classes"
-        subtitle="Organize courses, sections and student enrollment."
-        actions={
-          <button className="btn btn-primary" onClick={() => setDialog('create')}>
-            <Icon name="plus" size={16} /> Create class
-          </button>
-        }
-      />
+      {embedded ? (
+        <div className="tab-toolbar">
+          <span>One class per subject. Classes come from Schedules automatically.</span>
+          <Link className="btn btn-primary" to="/admin/schedules">
+              <Icon name="plus" size={16} /> Add schedule
+            </Link>
+        </div>
+      ) : (
+        <PageHeader
+          title="Classes"
+          subtitle="One class per subject. A class is created automatically when you schedule a subject for a section and instructor, with the section’s students enrolled."
+          actions={
+            <Link className="btn btn-primary" to="/admin/schedules">
+              <Icon name="plus" size={16} /> Add schedule
+            </Link>
+          }
+        />
+      )}
 
       <div className="grid grid-3">
         <Tile hero icon="book" label="Active classes" value={fmtNum(w.classes.length)} />
@@ -147,25 +156,14 @@ export default function Classes() {
         </div>
       ) : (
         <div className="card">
-          <Empty icon="book" title="No classes yet" body="Create a class and assign an instructor, or instructors can create their own in the mobile app.">
-            <button className="btn btn-primary" onClick={() => setDialog('create')}>
-              <Icon name="plus" size={16} /> Create class
-            </button>
+          <Empty icon="book" title="No classes yet" body="Add a subject, then schedule it for a section and instructor. Its class appears here automatically.">
+            <Link className="btn btn-primary" to="/admin/schedules">
+              <Icon name="plus" size={16} /> Add schedule
+            </Link>
           </Empty>
         </div>
       )}
 
-      {dialog === 'create' ? (
-        <CreateClass
-          onClose={() => setDialog(null)}
-          onSaved={async (id, label) => {
-            setDialog(null);
-            await refresh();
-            setParams({ class: id });
-            setDone({ title: 'Class created', body: `${label} is ready. Students can now be enrolled.` });
-          }}
-        />
-      ) : null}
       {dialog === 'enroll' && cls ? (
         <EnrollStudent
           classId={cls.id}
@@ -199,70 +197,6 @@ function useInstructors() {
   return w.profiles.filter((p) => rolesOf(w, p.id).includes('instructor'));
 }
 
-function CreateClass({ onClose, onSaved }: { onClose: () => void; onSaved: (id: string, label: string) => void }) {
-  const instructors = useInstructors();
-  const [code, setCode] = useState('');
-  const [title, setTitle] = useState('');
-  const [section, setSection] = useState('');
-  const [instructor, setInstructor] = useState(instructors[0]?.id ?? '');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const save = async () => {
-    if (!code.trim() || !title.trim()) return setErr('Enter the course code and title.');
-    if (!instructor) return setErr('Choose an instructor. Approve them in Instructor applications first.');
-    setBusy(true);
-    setErr(null);
-    try {
-      const { id } = await createClass({ code: code.trim().toUpperCase(), title: title.trim(), section: section.trim(), description: '', instructor_id: instructor });
-      onSaved(id, `${code.trim().toUpperCase()} · ${title.trim()}`);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal
-      title="Create a class"
-      sub="Review the details before saving."
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={() => void save()} disabled={busy}>
-            {busy ? 'Creating…' : 'Create class'}
-          </button>
-        </>
-      }>
-      <div className="form-grid">
-        <Field label="Course code">
-          <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ITEC 116" autoFocus />
-        </Field>
-        <Field label="Section">
-          <input className="input" value={section} onChange={(e) => setSection(e.target.value)} placeholder="BSIT 2A" />
-        </Field>
-      </div>
-      <Field label="Course title">
-        <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Web Development" />
-      </Field>
-      <Field label="Instructor" hint="Only accounts with the Instructor role are listed.">
-        <select className="select" value={instructor} onChange={(e) => setInstructor(e.target.value)}>
-          {instructors.length ? null : <option value="">No instructors yet</option>}
-          {instructors.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.full_name || p.email}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {err ? <div className="error">{err}</div> : null}
-    </Modal>
-  );
-}
 
 function EnrollStudent({ classId, label, onClose, onSaved }: { classId: string; label: string; onClose: () => void; onSaved: (who: string) => void }) {
   const { w } = useWorkspace();

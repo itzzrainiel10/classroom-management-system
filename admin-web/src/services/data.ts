@@ -248,10 +248,6 @@ export async function cancelInvitation(email: string) {
   must(await supabase.from('invitations').delete().eq('email', email).select('email'));
 }
 
-export async function createClass(v: { code: string; title: string; section: string; description: string; instructor_id: string }) {
-  return must(await supabase.from('classes').insert(v).select('id').single()) as { id: string };
-}
-
 export async function updateClass(id: string, patch: Partial<Pick<ClassRow, 'section' | 'instructor_id' | 'title' | 'code'>>) {
   must(await supabase.from('classes').update(patch).eq('id', id).select('id'));
 }

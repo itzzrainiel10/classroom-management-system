@@ -6,7 +6,6 @@ export default function InstructorLayout() {
   return (
     <Stack screenOptions={stackOptions}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="class/new" options={{ title: 'New class', presentation: 'modal' }} />
       <Stack.Screen name="class/[id]" options={{ title: 'Manage class' }} />
       <Stack.Screen name="quiz/new" options={{ title: 'Create quiz' }} />
       <Stack.Screen name="quiz/[id]" options={{ title: 'Monitor results' }} />

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppHeader, Button, Caption, Card, Empty, H2, Loading, OfflineNote, Pill, Row, Screen } from '@/components/ui';
+import { AppHeader, Caption, Card, Empty, H2, Loading, OfflineNote, Pill, Row, Screen } from '@/components/ui';
 import { colors } from '@/constants/theme';
 import { useClasses } from '@/hooks/use-classes';
 import { Pressable } from 'react-native';
@@ -14,11 +14,11 @@ export default function InstructorClasses() {
       <Screen onRefresh={refresh}>
         <AppHeader crumb="Instructor" title="Manage Classes" subtitle="Students, activities & settings" />
         <OfflineNote show={offline} savedAt={savedAt} />
-        <Button title="New class" icon="add" onPress={() => router.push('/instructor/class/new')} />
+        <Caption>One class per subject you teach. The administrator sets them up from your schedule, with the section’s students already enrolled.</Caption>
         {loading && !data ? <Loading /> : null}
         {error ? <Caption style={{ color: colors.danger }}>{error}</Caption> : null}
         {data && data.length === 0 ? (
-          <Empty icon="people-outline" title="No classes yet" body="Create a class like “ITEC 116 · Web Development · Dash 3”, then add students by their CvSU email." />
+          <Empty icon="people-outline" title="No classes yet" body="Your classes appear here once the administrator schedules a subject for you." />
         ) : null}
         {data?.map((c) => (
           <Pressable key={c.id} onPress={() => router.push(`/instructor/class/${c.id}`)} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>

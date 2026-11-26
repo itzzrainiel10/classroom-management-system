@@ -8,7 +8,6 @@ import { downloadCsv, fmtDateTime, fmtNum } from '../services/format';
 import {
   QUESTION_TYPES,
   alternatives,
-  createClass,
   deletePost,
   deleteQuiz,
   fetchAttempt,
@@ -44,84 +43,20 @@ const toLocalInput = (iso: string | null) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-/* ---------- Shared: class picker with "new class" ---------- */
+/* ---------- Shared: class picker ---------- */
 
-function ClassSelect({ classes, value, onChange, onCreated }: { classes: ClassRef[]; value: string; onChange: (id: string) => void; onCreated: () => Promise<void> }) {
-  const [adding, setAdding] = useState(false);
+function ClassSelect({ classes, value, onChange }: { classes: ClassRef[]; value: string; onChange: (id: string) => void }) {
   return (
-    <>
-      <Field label="Class">
-        <div className="row">
-          <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
-            {!classes.length ? <option value="">No classes yet</option> : null}
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {classLabel(c)}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="btn btn-secondary" onClick={() => setAdding(true)}>
-            <Icon name="plus" size={14} /> New class
-          </button>
-        </div>
-      </Field>
-      {adding ? (
-        <NewClassModal
-          onClose={() => setAdding(false)}
-          onSaved={async () => {
-            setAdding(false);
-            await onCreated();
-          }}
-        />
-      ) : null}
-    </>
-  );
-}
-
-export function NewClassModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => Promise<void> }) {
-  const [v, setV] = useState({ code: '', title: '', section: '', description: '' });
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const save = async () => {
-    if (!v.code.trim() || !v.title.trim() || !v.section.trim()) return setErr('Enter the subject code, title and section.');
-    setBusy(true);
-    setErr(null);
-    try {
-      await createClass({ code: v.code.trim(), title: v.title.trim(), section: v.section.trim(), description: v.description.trim() });
-      await onSaved();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-      setBusy(false);
-    }
-  };
-  return (
-    <Modal
-      title="New class"
-      sub="Students join by being enrolled in this class (by you in the mobile app, or by the administrator)."
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={() => void save()} disabled={busy}>
-            {busy ? 'Saving…' : 'Create class'}
-          </button>
-        </>
-      }>
-      <div className="form-grid">
-        <Field label="Subject code">
-          <input className="input" value={v.code} onChange={(e) => setV({ ...v, code: e.target.value })} placeholder="ITEC 116" autoFocus />
-        </Field>
-        <Field label="Section">
-          <input className="input" value={v.section} onChange={(e) => setV({ ...v, section: e.target.value })} placeholder="BSIT 3-1" />
-        </Field>
-      </div>
-      <Field label="Title">
-        <input className="input" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Web Development" />
-      </Field>
-      {err ? <ErrorNote message={err} /> : null}
-    </Modal>
+    <Field label="Class" hint={classes.length ? undefined : 'Your classes appear once the administrator schedules a subject for you.'}>
+      <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
+        {!classes.length ? <option value="">No classes yet</option> : null}
+        {classes.map((c) => (
+          <option key={c.id} value={c.id}>
+            {classLabel(c)}
+          </option>
+        ))}
+      </select>
+    </Field>
   );
 }
 
@@ -383,7 +318,7 @@ export function InstructorQuizEditor() {
                 ))}
               </div>
             </Field>
-            <ClassSelect classes={classes.data} value={meta.class_id} onChange={(class_id) => setMeta({ ...meta, class_id })} onCreated={classes.refresh} />
+            <ClassSelect classes={classes.data} value={meta.class_id} onChange={(class_id) => setMeta({ ...meta, class_id })} />
           </div>
           <Field label="Title">
             <input className="input" value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} placeholder="e.g. Midterm Exam – HTML & CSS" />
@@ -606,7 +541,7 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
             <Loading />
           ) : (
             <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <ClassSelect classes={classes.data} value={v.class_id} onChange={(class_id) => setV({ ...v, class_id })} onCreated={classes.refresh} />
+              <ClassSelect classes={classes.data} value={v.class_id} onChange={(class_id) => setV({ ...v, class_id })} />
               <Field label="Title">
                 <input className="input" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder={isTask ? 'e.g. Lab Activity 3 – Flexbox' : 'e.g. No class on Friday'} />
               </Field>

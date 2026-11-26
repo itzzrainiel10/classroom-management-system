@@ -51,9 +51,12 @@ export default function OmrScanner() {
     setScans(null);
     void load();
   }, [load]);
+  // Auto refresh while open (results from the website / other phones appear without pulling down).
   useFocusEffect(
     useCallback(() => {
       void load();
+      const t = setInterval(() => void load(), 15000);
+      return () => clearInterval(t);
     }, [load]),
   );
 

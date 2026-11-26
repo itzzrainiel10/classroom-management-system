@@ -6,7 +6,6 @@ import { toast } from '../components/toast';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, Modal, PageHeader, Person } from '../components/ui';
 import { useData } from '../hooks/useData';
 import { addStudents, fetchMyClassesWithCounts, fetchRoster, isEmail, removeStudent, renameStudent, type Student } from '../services/teaching';
-import { NewClassModal } from './Teaching';
 
 /** My Classes: the instructor's classes and their students (add one, add many, rename, remove). */
 export default function MyClasses() {
@@ -16,7 +15,7 @@ export default function MyClasses() {
   const setClassId = (id: string) => setParams({ class: id }, { replace: true });
   const roster = useData(() => (classId ? fetchRoster(classId) : Promise.resolve([] as Student[])), [classId]);
   const [q, setQ] = useState('');
-  const [modal, setModal] = useState<'one' | 'many' | 'class' | null>(null);
+  const [modal, setModal] = useState<'one' | 'many' | null>(null);
   const [rename, setRename] = useState<Student | null>(null);
   const [del, setDel] = useState<Student | null>(null);
 
@@ -39,21 +38,12 @@ export default function MyClasses() {
     <>
       <PageHeader
         title="My Classes"
-        subtitle="Your classes and the students in them. Students you add see the class, quizzes, assignments and attendance in the mobile app."
-        actions={
-          <button className="btn btn-secondary" onClick={() => setModal('class')}>
-            <Icon name="plus" size={16} /> New class
-          </button>
-        }
+        subtitle="One class per subject you teach. Classes are set up by the administrator from your schedule, with the section’s students already enrolled."
       />
 
       {!classes.data.length ? (
         <div className="card">
-          <Empty icon="book" title="No classes yet" body="Create a class, then add your students by their email.">
-            <button className="btn btn-primary" onClick={() => setModal('class')}>
-              <Icon name="plus" size={16} /> New class
-            </button>
-          </Empty>
+          <Empty icon="book" title="No classes yet" body="Your classes appear here once the administrator schedules a subject for you." />
         </div>
       ) : (
         <div className="grid classes-layout">
@@ -146,16 +136,6 @@ export default function MyClasses() {
         </div>
       )}
 
-      {modal === 'class' ? (
-        <NewClassModal
-          onClose={() => setModal(null)}
-          onSaved={async () => {
-            setModal(null);
-            await classes.refresh();
-            toast.success('Class created', 'Now add your students.');
-          }}
-        />
-      ) : null}
       {modal === 'one' && cls ? <AddOne classId={cls.id} label={`${cls.code} · ${cls.section}`} onClose={() => setModal(null)} onSaved={refreshAll} /> : null}
       {modal === 'many' && cls ? <AddMany classId={cls.id} label={`${cls.code} · ${cls.section}`} onClose={() => setModal(null)} onSaved={refreshAll} /> : null}
       {rename ? <RenameStudent student={rename} onClose={() => setRename(null)} onSaved={refreshAll} /> : null}

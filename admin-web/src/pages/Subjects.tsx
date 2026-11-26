@@ -5,7 +5,7 @@ import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
 import { deleteSubject, saveSubject, type Subject } from '../services/data';
 
-export default function Subjects() {
+export default function Subjects({ embedded = false }: { embedded?: boolean } = {}) {
   const { w, refresh } = useWorkspace();
   const [edit, setEdit] = useState<Partial<Subject> | null>(null);
   const [del, setDel] = useState<Subject | null>(null);
@@ -18,15 +18,21 @@ export default function Subjects() {
 
   return (
     <>
-      <PageHeader
-        title="Subjects"
-        subtitle="Courses that can be scheduled for a section."
-        actions={
+      {(() => {
+        const add = (
           <button className="btn btn-primary" onClick={() => setEdit({ units: 3, department: '', description: '' })}>
             <Icon name="plus" size={16} /> Add subject
           </button>
-        }
-      />
+        );
+        return embedded ? (
+          <div className="tab-toolbar">
+            <span>Courses that can be scheduled for a section.</span>
+            {add}
+          </div>
+        ) : (
+          <PageHeader title="Subjects" subtitle="Courses your departments offer. Schedule a subject for a section and instructor (Schedules) and its class is created automatically." actions={add} />
+        );
+      })()}
       <div className="filters">
         <input className="input" placeholder="Search code or name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search subjects" />
         <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department">

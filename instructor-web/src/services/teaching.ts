@@ -72,12 +72,6 @@ export async function fetchMyClasses(): Promise<ClassRef[]> {
   return must(await supabase.from('classes').select('id, code, title, section').eq('instructor_id', auth.user.id).order('code')) as ClassRef[];
 }
 
-export async function createClass(v: { code: string; title: string; section: string; description: string }) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error('Not signed in');
-  must(await supabase.from('classes').insert({ ...v, instructor_id: auth.user.id }).select('id'));
-}
-
 export async function fetchQuizzes(): Promise<QuizRow[]> {
   const classes = await fetchMyClasses();
   if (!classes.length) return [];

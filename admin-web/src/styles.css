@@ -499,3 +499,10 @@ a.list-item:hover, button.list-item:hover { background: #fafcfa; }
 
 /* No search box in the top bar (instructor site): push the bell + profile to the right edge. */
 .topbar .crumbs + .top-right { margin-left: auto; }
+
+/* Tabs that are links (Subjects & Classes) */
+.tabs a.tab-link { display: inline-flex; align-items: center; padding: 6px 13px; border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; color: var(--text-soft); transition: background 0.15s, color 0.15s; }
+.tabs a.tab-link:hover { color: var(--text); }
+.tabs a.tab-link.on { background: var(--card); color: var(--primary); box-shadow: var(--shadow-sm); }
+.tabs a.tab-link .n { font-weight: 500; color: var(--muted); margin-left: 5px; }
+.tab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--text-soft); }

@@ -99,14 +99,7 @@ export default function InstructorSchedule() {
             <ScheduleTable classes={official} emptyBody="When an administrator assigns you to a subject and section, it appears here." />
           )
         ) : null}
-        <Card tone="soft" style={{ gap: 4 }}>
-          <Row style={{ gap: 8 }}>
-            <Ionicons name="lock-closed-outline" size={16} color={colors.primary} />
-            <H2 style={{ flex: 1 }}>Official schedule is managed by the administrator</H2>
-          </Row>
-          <Caption>Ask your administrator for changes. You’ll get a notification whenever it’s updated.</Caption>
-        </Card>
-
+        
         <Label>Extra class meetings (yours)</Label>
         <Button title="Add an extra class meeting" icon="add" variant="secondary" onPress={() => router.push('/instructor/schedule-new')} />
         {loading && !data ? <Loading /> : null}
@@ -115,4 +108,5 @@ export default function InstructorSchedule() {
       </Screen>
     </SafeAreaView>
   );
+  
 }

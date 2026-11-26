@@ -165,9 +165,7 @@ export default function CreateQuiz() {
   if (classes && classes.length === 0) {
     return (
       <Screen>
-        <Empty icon="people-outline" title="Create a class first" body="Quizzes and exams belong to a class and section.">
-          <Button title="New class" icon="add" onPress={() => router.replace('/instructor/class/new')} />
-        </Empty>
+        <Empty icon="people-outline" title="No classes yet" body="Quizzes and exams belong to a class. Your classes appear once the administrator schedules a subject for you." />
       </Screen>
     );
   }

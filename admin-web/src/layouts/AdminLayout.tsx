@@ -17,7 +17,7 @@ export function useWorkspace() {
   return c;
 }
 
-type NavItem = { to: string; label: string; icon: IconName; group: string };
+type NavItem = { to: string; label: string; icon: IconName; group: string; /** other paths that belong to this item */ also?: string[] };
 const NAV: NavItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'home', group: '' },
   { to: '/admin/users', label: 'Users', icon: 'users', group: 'People' },
@@ -57,10 +57,11 @@ export function AdminLayout() {
       }
       return !c;
     });
-  const group = NAV.find((n) => location.pathname.startsWith(n.to))?.group ?? '';
+  const group = NAV.find((n) => location.pathname.startsWith(n.to) || !!n.also?.some((p) => location.pathname.startsWith(p)))?.group ?? '';
   const [q, setQ] = useState('');
   const navigate = useNavigate();
-  const current = NAV.find((n) => location.pathname.startsWith(n.to))?.label ?? 'Dashboard';
+  const inItem = (n: NavItem) => location.pathname.startsWith(n.to) || !!n.also?.some((p) => location.pathname.startsWith(p));
+  const current = NAV.find(inItem)?.label ?? 'Dashboard';
   const applicants = data?.instructorProfiles.filter((x) => x.status === 'pending').length ?? 0;
   const badge: Record<string, number> = { '/admin/instructor-verification': applicants };
   const pending = data?.instructorProfiles.filter((x) => x.status === 'pending').sort((a, b) => b.submitted_at.localeCompare(a.submitted_at)) ?? [];
@@ -109,7 +110,7 @@ export function AdminLayout() {
             {g ? <div className="nav-label">{g}</div> : null}
             <nav className="nav">
               {NAV.filter((n) => n.group === g).map((n) => (
-                <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')} title={collapsed ? n.label : undefined}>
+                <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive || inItem(n) ? 'active' : '')} title={collapsed ? n.label : undefined}>
                   <Icon name={n.icon} size={18} />
                   <span className="label">{n.label}</span>
                   {badge[n.to] ? <span className="count">{badge[n.to]}</span> : null}
