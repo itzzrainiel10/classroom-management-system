@@ -14,12 +14,17 @@ import Overview from './pages/Overview';
 import Reports from './pages/Reports';
 import Schedules from './pages/Schedules';
 import Sections from './pages/Sections';
-import Settings from './pages/Settings';
+import Approvals from './pages/Approvals';
+import Verification from './pages/Verification';
+import Rooms from './pages/Rooms';
+import Semesters from './pages/Semesters';
 import Subjects from './pages/Subjects';
 import Users from './pages/Users';
-import Verification from './pages/Verification';
 import { AuthProvider, useAuth } from './services/auth';
+import { initPrefs } from './services/prefs';
 import './styles.css';
+
+initPrefs();
 
 /**
  * ADMIN WEB APP (http://localhost:5173). Administrators only.
@@ -34,7 +39,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
 }
 
 /** Old addresses (bookmarks, the Google sign-in return URL /overview) forward to /admin/… */
-const LEGACY: Record<string, string> = { overview: 'dashboard', verification: 'instructor-verification', 'sign-in': 'login' };
+const LEGACY: Record<string, string> = { overview: 'dashboard', verification: 'instructor-verification', 'sign-in': 'login', settings: 'semesters' };
 function LegacyRedirect() {
   const { pathname, search } = useLocation();
   const [, first, ...rest] = pathname.split('/');
@@ -61,15 +66,19 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/users/:id" element={<EditUser />} />
             <Route path="/admin/students" element={<Users only="student" />} />
-            <Route path="/admin/instructor-verification" element={<Verification />} />
+            <Route path="/admin/instructor-verification" element={<Approvals />} />
             <Route path="/admin/instructors" element={<Instructors />} />
             <Route path="/admin/subjects" element={<Subjects />} />
             <Route path="/admin/sections" element={<Sections />} />
+            <Route path="/admin/renewals" element={<Approvals />} />
+            <Route path="/admin/instructor-records" element={<Verification />} />
+            <Route path="/admin/rooms" element={<Rooms />} />
             <Route path="/admin/schedules" element={<Schedules />} />
             <Route path="/admin/classes" element={<Classes />} />
             <Route path="/admin/reports" element={<Reports />} />
             <Route path="/admin/activity" element={<ActivityLog />} />
-            <Route path="/admin/settings" element={<Settings />} />
+            <Route path="/admin/semesters" element={<Semesters />} />
+            <Route path="/admin/settings" element={<Navigate to="/admin/semesters" replace />} />
           </Route>
           {['overview', 'sign-in', 'users/*', 'verification', 'instructors', 'subjects', 'sections', 'schedules', 'classes', 'reports', 'activity', 'settings'].map((p) => (
             <Route key={p} path={`/${p}`} element={<LegacyRedirect />} />

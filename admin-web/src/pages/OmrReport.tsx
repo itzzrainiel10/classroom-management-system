@@ -1,4 +1,5 @@
 import { CardHead, Empty, Loading, Tile } from '../components/ui';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { classLabel, nameOf, useData, type ClassRow } from '../services/data';
 import { fmtNum } from '../services/format';
@@ -38,12 +39,13 @@ export function OmrReport({ classes, since }: { classes: ClassRow[]; since: Date
     const avg = done.length ? Math.round((done.reduce((n, s) => n + (s.total ? (s.score ?? 0) / s.total : 0), 0) / done.length) * 100) : null;
     return { qid, title: quiz?.title ?? 'Exam', cls, printed: (data?.sheets ?? []).filter((s) => s.quiz_id === qid).length, scans: mine.length, done: done.length, review: mine.filter((s) => s.status === 'needs_review' || s.status === 'ready').length, failed: mine.filter((s) => s.status === 'failed').length, avg };
   });
+  const { shown: pageRows, paging } = usePaged(exams);
 
   return (
     <>
       <div className="page-head" style={{ marginTop: 8 }}>
         <div>
-          <h1 style={{ fontSize: 19 }}>Paper answer sheets (OMR)</h1>
+          <h1 style={{ fontSize: 'calc(19px * var(--text-scale))' }}>Paper answer sheets (OMR)</h1>
           <p>Scanner uploads (Instructor website) and phone photos (mobile app), read by the same engine.</p>
         </div>
       </div>
@@ -61,39 +63,42 @@ export function OmrReport({ classes, since }: { classes: ClassRow[]; since: Date
           <div className="card">
             <CardHead title="OMR by exam" sub="In this period" />
             {exams.length ? (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Exam</th>
-                      <th>Instructor</th>
-                      <th className="num">Printed</th>
-                      <th className="num">Scans</th>
-                      <th className="num">Graded</th>
-                      <th className="num">To review</th>
-                      <th className="num">Unreadable</th>
-                      <th className="num">Avg. score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {exams.map((x) => (
-                      <tr key={x.qid}>
-                        <td>
-                          <b>{x.title}</b>
-                          <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{x.cls ? classLabel(x.cls) : ''}</div>
-                        </td>
-                        <td>{x.cls ? nameOf(w, x.cls.instructor_id) : '—'}</td>
-                        <td className="num">{x.printed}</td>
-                        <td className="num">{x.scans}</td>
-                        <td className="num">{x.done}</td>
-                        <td className="num">{x.review ? <span className="badge gold">{x.review}</span> : 0}</td>
-                        <td className="num">{x.failed ? <span className="badge red">{x.failed}</span> : 0}</td>
-                        <td className="num">{x.avg == null ? '—' : `${x.avg}%`}</td>
+              <>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Exam</th>
+                        <th>Instructor</th>
+                        <th className="num">Printed</th>
+                        <th className="num">Scans</th>
+                        <th className="num">Graded</th>
+                        <th className="num">To review</th>
+                        <th className="num">Unreadable</th>
+                        <th className="num">Avg. score</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {pageRows.map((x) => (
+                        <tr key={x.qid}>
+                          <td>
+                            <b>{x.title}</b>
+                            <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{x.cls ? classLabel(x.cls) : ''}</div>
+                          </td>
+                          <td>{x.cls ? nameOf(w, x.cls.instructor_id) : '—'}</td>
+                          <td className="num">{x.printed}</td>
+                          <td className="num">{x.scans}</td>
+                          <td className="num">{x.done}</td>
+                          <td className="num">{x.review ? <span className="badge gold">{x.review}</span> : 0}</td>
+                          <td className="num">{x.failed ? <span className="badge red">{x.failed}</span> : 0}</td>
+                          <td className="num">{x.avg == null ? '—' : `${x.avg}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pager paging={paging} noun="exams" />
+              </>
             ) : (
               <Empty icon="clipboard" title="No paper answer sheets scanned in this period" body="Instructors scan sheets on the Instructor website (OMR Management) or with the mobile app (OMR Scanner)." />
             )}

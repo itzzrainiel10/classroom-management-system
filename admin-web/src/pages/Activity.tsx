@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { Empty, ErrorNote, Loading, PageHeader } from '../components/ui';
 import { fetchActivity, useData } from '../services/data';
 import { downloadCsv, fmtDateTime, startOfDay } from '../services/format';
@@ -36,6 +37,7 @@ export default function ActivityLog() {
   const { data, error, loading } = useData(() => fetchActivity(since), [since]);
 
   const rows = (data ?? []).filter((a) => (category === 'all' || a.category === category) && (role === 'all' || a.actor_role === role));
+  const { shown: pageRows, paging } = usePaged(rows, `${range}|${category}|${role}`, 25);
 
   const exportCsv = () =>
     downloadCsv(`activity-log-${new Date().toISOString().slice(0, 10)}.csv`, [
@@ -95,7 +97,7 @@ export default function ActivityLog() {
                 </tr>
               </thead>
               <tbody>
-                {rows.slice(0, 300).map((a) => (
+                {pageRows.map((a) => (
                   <tr key={a.id}>
                     <td>
                       <div className="person">
@@ -122,17 +124,13 @@ export default function ActivityLog() {
         ) : (
           <Empty icon="activity" title="No activity in this range" body="Try a longer date range or a different filter." />
         )}
-        <div className="table-foot">
-          <span>
-            Showing {Math.min(rows.length, 300)} of {rows.length} events · All times in Philippine Standard Time (UTC+8)
-          </span>
-        </div>
+        {rows.length ? <Pager paging={paging} noun="events" extra={<span style={{ color: '#a8d5bd' }}>All times in Philippine Standard Time (UTC+8)</span>} /> : null}
       </div>
 
       <div className="note">
         <Icon name="shield" />
         <div>
-          <b>Role-based access, by design.</b> Instructors manage assigned classes. Students see only their enrolled classes and own records. Admin actions are recorded here.
+          <b>Privacy and security</b>
         </div>
       </div>
     </>

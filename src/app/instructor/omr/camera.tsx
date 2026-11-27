@@ -6,7 +6,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, useWindowDimensi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui';
-import { colors } from '@/constants/theme';
+import { colors, themed } from '@/constants/theme';
 import { omrQueue, preparePhoto } from '@/lib/omr';
 
 const TIPS = [
@@ -142,7 +142,7 @@ export default function OmrCamera() {
 }
 
 const B = 34;
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   dark: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center' },
   permTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
@@ -168,4 +168,4 @@ const styles = StyleSheet.create({
   previewTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center' },
   previewSub: { color: 'rgba(255,255,255,0.75)', fontSize: 13, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 },
   previewRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16 },
-});
+}));

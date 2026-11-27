@@ -21,6 +21,7 @@ export default function EditUser() {
   const [last, setLast] = useState(initial.last);
   const [studentNo, setStudentNo] = useState(profile?.student_number ?? '');
   const [status, setStatus] = useState<'active' | 'suspended'>(profile?.status ?? 'active');
+  const [reason, setReason] = useState(profile?.suspension_reason ?? '');
   const role = currentRole;
   const [sectionId, setSectionId] = useState(profile?.section_id ?? '');
   const [busy, setBusy] = useState(false);
@@ -38,10 +39,11 @@ export default function EditUser() {
   const save = async () => {
     const full = `${first.trim()} ${last.trim()}`.trim();
     if (!full) return setErr('Enter a name.');
+    if (status === 'suspended' && !reason.trim()) return setErr('Give a reason for the suspension. The person will see it.');
     setBusy(true);
     setErr(null);
     try {
-      await updateUser(profile.id, { full_name: full, student_number: studentNo.trim(), status });
+      await updateUser(profile.id, { full_name: full, student_number: studentNo.trim(), status, suspension_reason: status === 'suspended' ? reason.trim() : '' });
       if (role === 'student' && (sectionId || null) !== (profile.section_id ?? null)) await setStudentSection(profile.id, sectionId || null);
       await refresh();
       setDone(true);
@@ -73,7 +75,7 @@ export default function EditUser() {
       <div className="card card-pad row row-wrap" style={{ gap: 16 }}>
         <Avatar name={row.name} lg />
         <div style={{ flex: 1, minWidth: 200 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800 }}>{row.name}</h2>
+          <h2 style={{ fontSize: 'calc(18px * var(--text-scale))', fontWeight: 800 }}>{row.name}</h2>
           <div style={{ color: 'var(--text-soft)' }}>{profile.email}</div>
         </div>
         <div className="row">
@@ -122,10 +124,15 @@ export default function EditUser() {
               </Field>
             ) : null}
             {status === 'suspended' ? (
-              <div className="note red">
-                <Icon name="alert" />
-                <div>Suspended accounts are signed out of the mobile app and lose access to class data.</div>
-              </div>
+              <>
+                <Field label="Reason for suspension" required hint="Shown to the person in the app and on the website, and sent to them as a notification.">
+                  <textarea className="textarea" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Unpaid fees — please visit the Registrar" />
+                </Field>
+                <div className="note red">
+                  <Icon name="alert" />
+                  <div>Suspended accounts are signed out of the app and website and lose access to class data. They see this reason when they try to sign in.</div>
+                </div>
+              </>
             ) : null}
           </div>
       </div>

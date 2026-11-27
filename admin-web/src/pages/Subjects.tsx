@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
 import { deleteSubject, saveSubject, type Subject } from '../services/data';
@@ -14,6 +15,7 @@ export default function Subjects({ embedded = false }: { embedded?: boolean } = 
   const depts = [...new Set(w.subjects.map((s) => s.department).filter(Boolean))].sort();
   const needle = q.trim().toLowerCase();
   const rows = w.subjects.filter((s) => (dept === 'all' || s.department === dept) && (!needle || `${s.code} ${s.name}`.toLowerCase().includes(needle)));
+  const { shown: pageRows, paging } = usePaged(rows, `${dept}|${needle}`);
   const uses = (id: string) => w.schedules.filter((x) => x.subject_id === id).length;
 
   return (
@@ -44,43 +46,46 @@ export default function Subjects({ embedded = false }: { embedded?: boolean } = 
       </div>
       <div className="card">
         {rows.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Subject name</th>
-                  <th>Department</th>
-                  <th className="num">Units</th>
-                  <th className="num">Scheduled classes</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <b>{s.code}</b>
-                    </td>
-                    <td>{s.name}</td>
-                    <td>{s.department || '—'}</td>
-                    <td className="num">{s.units}</td>
-                    <td className="num">{uses(s.id)}</td>
-                    <td className="num">
-                      <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.code}`}>
-                          <Icon name="trash" size={14} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Subject name</th>
+                    <th>Department</th>
+                    <th className="num">Units</th>
+                    <th className="num">Scheduled classes</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRows.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        <b>{s.code}</b>
+                      </td>
+                      <td>{s.name}</td>
+                      <td>{s.department || '—'}</td>
+                      <td className="num">{s.units}</td>
+                      <td className="num">{uses(s.id)}</td>
+                      <td className="num">
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
+                            Edit
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.code}`}>
+                            <Icon name="trash" size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="subjects" />
+          </>
         ) : (
           <Empty icon="book" title={needle || dept !== 'all' ? 'No matching subjects' : 'No subjects yet'} body="Add the subjects your departments offer, then schedule them per section." />
         )}

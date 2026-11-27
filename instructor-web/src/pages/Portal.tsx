@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
 import { useInstructor } from '../layouts/InstructorLayout';
-import { Avatar, CardHead, Empty, ErrorNote, Field, PageHeader, Tile } from '../components/ui';
+import { CardHead, Empty, ErrorNote, Field, PageHeader, Tile } from '../components/ui';
 import { useAuth } from '../services/auth';
 import { DAYS } from '../services/common';
 import { fmtClock, fmtDate, fmtDateTime, fmtNum, fmtToday, greeting, minutesOf, semesterRange } from '../services/format';
 import { changeMyPassword, hours, markNotificationsRead, updateMyName, type MyClass } from '../services/instructor';
+import { useData } from '../hooks/useData';
+import { fetchMyClassesWithCounts } from '../services/teaching';
 
 /** Same subject → same calm colour (week-slot c0–c5) in every timetable. */
 const tint = (code: string) => `c${[...code].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 6}`;
@@ -72,12 +74,12 @@ function SectionScheduleTable({ rows }: { rows: MyClass[] }) {
             const newSection = i === 0 || sorted[i - 1].section_name !== c.section_name;
             const newDay = newSection || sorted[i - 1].day_of_week !== c.day_of_week;
             return (
-              <tr key={c.id} style={newSection && i > 0 ? { borderTop: '2px solid #d5ddd7' } : undefined}>
+              <tr key={c.id} style={newSection && i > 0 ? { borderTop: '2px solid var(--line-strong)' } : undefined}>
                 <td style={{ fontWeight: 600 }}>
                   {newSection ? (
                     <>
                       {c.section_name}
-                      <small style={{ display: 'block', color: 'var(--text-soft)', fontWeight: 400 }}>Year {c.year_level}</small>
+                      <small style={{ display: 'block', color: 'var(--text-soft)', fontWeight: 400 }}>{c.extra ? 'Extra meeting' : `Year ${c.year_level}`}</small>
                     </>
                   ) : null}
                 </td>
@@ -127,26 +129,35 @@ export function InstructorDashboard() {
   const days = d.schedule.some((c) => c.day_of_week === 6) ? 6 : 5;
   return (
     <>
-      <div className="card welcome">
-        <Avatar name={d.profile.full_name || first} lg />
-        <div>
-          <h2>
-            {greeting()}, {first}!
-          </h2>
-          <p>{[d.application?.employee_id, d.application?.department].filter(Boolean).join(' · ') || d.profile.email}</p>
-          <p>{[fmtToday(), termLine(d.term)].filter(Boolean).join(' · ')}</p>
-        </div>
-        <div className="facts">
-          <div>
-            <b>{today.length}</b>
-            <small>Classes today</small>
+      <section className="card hello">
+        <div className="hello-top">
+          <div className="hello-main">
+            <p className="hello-date">{fmtToday()}</p>
+            <h1>
+              {greeting()}, {first}
+            </h1>
+            <p className="hello-meta">{[d.application?.department, d.application?.employee_id].filter(Boolean).join(' · ') || d.profile.email}</p>
           </div>
-          <div>
-            <b>{hours(d.schedule)}</b>
-            <small>Hours / week</small>
-          </div>
+          <dl className="hello-stats">
+            <div>
+              <dt>Classes today</dt>
+              <dd>{today.length}</dd>
+            </div>
+            <div>
+              <dt>Sections</dt>
+              <dd>{sections}</dd>
+            </div>
+            <div>
+              <dt>Teaching load</dt>
+              <dd>
+                {hours(d.schedule)}
+                <small> hrs / wk</small>
+              </dd>
+            </div>
+          </dl>
         </div>
-      </div>
+        {d.term ? <TermProgress term={d.term} /> : null}
+      </section>
 
       <div className="grid grid-4">
         <Tile icon="book" label="Assigned subjects" value={fmtNum(subjects)} sub="This term" to="/subjects" />
@@ -222,7 +233,7 @@ export function InstructorDashboard() {
                     </small>
                   </div>
                   <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <b style={{ fontSize: 12.5 }}>{whenLabel(inDays, c.day_of_week)}</b>
+                    <b style={{ fontSize: 'calc(12.5px * var(--text-scale))' }}>{whenLabel(inDays, c.day_of_week)}</b>
                     <small style={{ display: 'block', color: 'var(--text-soft)' }}>{fmtClock(c.start_time)}</small>
                   </span>
                 </div>
@@ -383,9 +394,18 @@ export function InstructorSubjects() {
 export function InstructorSections() {
   const { d } = useInstructor();
   const names = [...new Set(d.schedule.map((c) => c.section_name))].sort();
+  // Students per section: everyone in the section is enrolled in each of its classes, so the largest
+  // class roster for that section is the section's size.
+  const counts = useData(fetchMyClassesWithCounts);
+  const studentsIn = (name: string) =>
+    (counts.data ?? []).filter((c) => c.section.toLowerCase() === name.toLowerCase()).reduce((m, c) => Math.max(m, c.students), 0);
+  const total = names.reduce((n, name) => n + studentsIn(name), 0);
   return (
     <>
-      <PageHeader title="My Sections" subtitle={`Sections you teach · ${termLine(d.term)}`} />
+      <PageHeader
+        title="My Sections"
+        subtitle={`Sections you teach · ${counts.data ? `${plural(names.length, 'section', 'sections')} · ${plural(total, 'student', 'students')} · ` : ''}${termLine(d.term)}`}
+      />
       {names.length ? (
         <div className="grid grid-2-even">
           {names.map((name) => {
@@ -393,7 +413,15 @@ export function InstructorSections() {
             const sec = d.sections.find((s) => s.name.toLowerCase() === name.toLowerCase());
             return (
               <div key={name} className="card">
-                <CardHead title={name} sub={[`Year ${rows[0].year_level}`, sec?.program, sec?.department].filter(Boolean).join(' · ')} />
+                <CardHead
+                  title={name}
+                  sub={[rows[0].year_level ? `Year ${rows[0].year_level}` : '', sec?.program, sec?.department].filter(Boolean).join(' · ')}
+                  right={
+                    <span className="badge green" title="Students enrolled in this section">
+                      <Icon name="users" size={13} /> {counts.data ? plural(studentsIn(name), 'student', 'students') : '…'}
+                    </span>
+                  }
+                />
                 <ScheduleTable rows={rows} />
               </div>
             );
@@ -414,7 +442,7 @@ export function InstructorSchedule() {
   const rows = sortClasses(d.schedule);
   return (
     <>
-      <PageHeader title="My Teaching Schedule" subtitle={`${termLine(d.term)} · ${rows.length} classes · ${hours(rows)} hours per week`} />
+      <PageHeader title="My Teaching Schedule" subtitle={`${termLine(d.term)} · ${plural(rows.length, 'class', 'classes')} · ${hours(rows)} hours per week`} />
       <div className="note">
         <Icon name="shield" />
         <div>The official schedule is set by your administrator. You’re notified here and in the mobile app whenever it changes.</div>
@@ -602,4 +630,33 @@ export function InstructorSettings() {
       </div>
     </>
   );
+}
+
+/** Thin "Week 3 of 16" bar for the current semester. */
+function TermProgress({ term }: { term: { current_semester: string; current_academic_year: string; semester_start: string | null; semester_end: string | null } }) {
+  const start = term.semester_start ? Date.parse(term.semester_start) : NaN;
+  const end = term.semester_end ? Date.parse(term.semester_end) : NaN;
+  const known = Number.isFinite(start) && Number.isFinite(end) && end > start;
+  const weeks = known ? Math.ceil((end - start + 86400000) / (7 * 86400000)) : 0;
+  const now = Date.now();
+  const week = known ? Math.min(weeks, Math.max(0, Math.floor((now - start) / (7 * 86400000)) + 1)) : 0;
+  const status = !known ? 'Dates not set' : now < start ? 'Starts ' + fmtDate(term.semester_start!) : now > end + 86400000 ? 'Semester ended' : `Week ${week} of ${weeks}`;
+  const fill = !known ? 0 : now < start ? 0 : now > end ? 100 : Math.round(((now - start) / (end - start)) * 100);
+  return (
+    <div className="hello-term">
+      <span className="hello-term-name">
+        {term.current_semester}, AY {term.current_academic_year}
+      </span>
+      <div className="hello-bar" role="progressbar" aria-valuenow={fill} aria-valuemin={0} aria-valuemax={100} aria-label="Semester progress">
+        <i style={{ width: `${fill}%` }} />
+      </div>
+      <span className="hello-term-status">{status}</span>
+      {known ? <span className="hello-term-dates">{semesterRange(term.semester_start, term.semester_end).split(' · ')[0]}</span> : null}
+    </div>
+  );
+}
+
+/** "1 class" / "5 classes". One class (subject + section) can meet several times a week. */
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
 }

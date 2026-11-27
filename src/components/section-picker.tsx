@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Caption, Card, H2 } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { chooseMySection, fetchSections, type SectionOption } from '@/lib/data';
 
 /** Loads the section list (works before sign-in). */
@@ -84,10 +84,10 @@ export function ChooseSectionCard({ onChosen }: { onChosen: () => void }) {
 }
 
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   year: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.muted },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontWeight: '700', color: colors.text },
-});
+}));

@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import { ClassPicker, defaultDue, DueDateField, NumberField } from '@/components/pickers';
 import { Button, Caption, Card, Empty, Field, Label, Loading, Row, Screen, Segmented } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useClasses } from '@/hooks/use-classes';
 import { fetchQuizForEdit, QUESTION_TYPES, saveQuizOp, type AnswerKey, type AssessmentKind, type DraftQuestion, type QuestionType, type QuizStatus } from '@/lib/data';
 import { useOutbox } from '@/lib/outbox';
@@ -351,7 +351,7 @@ export default function CreateQuiz() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   qLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.primary, flex: 1 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -368,4 +368,4 @@ const styles = StyleSheet.create({
   small: { fontSize: 13, fontWeight: '700', color: colors.text },
   tf: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.md, paddingVertical: 12 },
   tfText: { fontWeight: '800', fontSize: 15, color: colors.text },
-});
+}));

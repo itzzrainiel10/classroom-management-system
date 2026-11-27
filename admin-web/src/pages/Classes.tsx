@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, Field, Modal, PageHeader, Person, Success, Tile } from '../components/ui';
 import { classStats, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../services/data';
@@ -25,6 +26,7 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
   const sections = new Set(w.classes.map((c) => c.section).filter(Boolean)).size;
   const enrolledStudents = new Set(w.enrollments.map((e) => e.email)).size;
   const stats = cls ? classStats(w, cls.id) : null;
+  const { shown: pageStudents, paging } = usePaged(stats?.students ?? [], cls?.id);
 
   return (
     <>
@@ -65,7 +67,7 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
                   </option>
                 ))}
               </select>
-              <div style={{ color: 'var(--text-soft)', fontSize: 13 }}>
+              <div style={{ color: 'var(--text-soft)', fontSize: 'calc(13px * var(--text-scale))' }}>
                 Instructor: <b style={{ color: 'var(--text)' }}>{nameOf(w, cls.instructor_id)}</b>
               </div>
             </div>
@@ -105,7 +107,7 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.students.map((s) => {
+                  {pageStudents.map((s) => {
                     const p = w.profiles.find((x) => x.email === s.email);
                     return (
                       <tr key={s.id}>
@@ -147,12 +149,7 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
               </button>
             </Empty>
           )}
-          <div className="table-foot">
-            <span>
-              Showing {stats.students.length} student{stats.students.length === 1 ? '' : 's'} · {cls.code}
-              {cls.section ? `, ${cls.section}` : ''}
-            </span>
-          </div>
+          {stats.students.length ? <Pager paging={paging} noun={`students · ${cls.code}${cls.section ? `, ${cls.section}` : ''}`} /> : null}
         </div>
       ) : (
         <div className="card">

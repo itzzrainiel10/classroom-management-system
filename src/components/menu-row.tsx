@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { IconName } from '@/components/ui';
-import { colors, radius, shadow } from '@/constants/theme';
+import { colors, radius, shadow, themed } from '@/constants/theme';
 
 /** Quick-access row: icon, title, one-line description, arrow. */
 export function MenuRow({ icon, title, body, onPress, badge }: { icon: IconName; title: string; body: string; onPress: () => void; badge?: string }) {
@@ -29,7 +29,7 @@ export function MenuRow({ icon, title, body, onPress, badge }: { icon: IconName;
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -48,4 +48,4 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: colors.gold, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   chev: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 12, fontWeight: '800', color: colors.text },
-});
+}));

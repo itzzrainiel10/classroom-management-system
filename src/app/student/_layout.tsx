@@ -1,10 +1,12 @@
 import { Stack } from 'expo-router';
 
-import { stackOptions } from '@/components/nav';
+import { screenLayout, stackOptions } from '@/components/nav';
+import { useThemeVersion } from '@/constants/theme';
 
 export default function StudentLayout() {
+  useThemeVersion(); // re-apply header colors after a theme change
   return (
-    <Stack screenOptions={stackOptions}>
+    <Stack screenOptions={stackOptions} screenLayout={screenLayout}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ title: 'My class' }} />
       <Stack.Screen name="quiz/[id]" options={{ title: 'Quiz' }} />
@@ -14,6 +16,9 @@ export default function StudentLayout() {
       <Stack.Screen name="announcements" options={{ title: 'Announcements' }} />
       <Stack.Screen name="attendance" options={{ title: 'My attendance' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="semesters" options={{ title: 'My Semesters' }} />
+      <Stack.Screen name="renew" options={{ title: 'Renew Enrollment' }} />
+      <Stack.Screen name="semester/[id]" options={{ title: 'Semester records' }} />
     </Stack>
   );
 }

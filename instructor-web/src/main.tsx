@@ -29,7 +29,10 @@ import {
   InstructorResults,
 } from './pages/Teaching';
 import { AuthProvider, useAuth } from './services/auth';
+import { initPrefs } from './services/prefs';
 import './styles.css';
+
+initPrefs();
 
 /**
  * INSTRUCTOR WEB APP (http://localhost:5174). Approved instructors only.

@@ -22,6 +22,5 @@
   "include": [
     "src",
     "vite.config.ts"
-  ],
-  "extends": "expo/tsconfig.base"
+  ]
 }

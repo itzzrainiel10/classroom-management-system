@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ClassPicker } from '@/components/pickers';
 import { Button, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useClasses } from '@/hooks/use-classes';
 import { useRemote } from '@/hooks/use-remote';
 import { attendanceOp, fetchClassAttendance, fetchClassDetail, type AttendanceStatus } from '@/lib/data';
@@ -125,7 +125,7 @@ export default function TakeAttendance() {
                     style={[styles.opt, m === st && (st === 'present' ? styles.optPresent : styles.optAbsent)]}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: m === st }}>
-                    <Text style={[styles.optText, m === st && { color: '#fff' }]}>{st === 'present' ? 'Present' : 'Absent'}</Text>
+                    <Text style={[styles.optText, m === st && { color: colors.onPrimary }]}>{st === 'present' ? 'Present' : 'Absent'}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -159,7 +159,7 @@ export default function TakeAttendance() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   link: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   name: { fontSize: 14.5, fontWeight: '700', color: colors.text },
@@ -168,4 +168,4 @@ const styles = StyleSheet.create({
   optPresent: { backgroundColor: colors.primary },
   optAbsent: { backgroundColor: colors.danger },
   optText: { fontSize: 12.5, fontWeight: '700', color: colors.textSoft },
-});
+}));

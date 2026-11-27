@@ -50,7 +50,7 @@ export default function OmrPrint() {
         </Link>
         <div style={{ flex: 1 }}>
           <b>{exam.title}</b> · {sheets.length} sheet{sheets.length === 1 ? '' : 's'} · {layout.length} questions
-          <div style={{ fontSize: 12.5, color: 'var(--text-soft)' }}>Print on A4 paper at 100 % (no “fit to page”). Students shade one bubble per question with a dark pencil or pen.</div>
+          <div style={{ fontSize: 'calc(12.5px * var(--text-scale))', color: 'var(--text-soft)' }}>Print on A4 paper at 100 % (no “fit to page”). Students shade one bubble per question with a dark pencil or pen.</div>
         </div>
         <button className="btn btn-primary" onClick={() => window.print()} disabled={!sheets.length}>
           Print {sheets.length} sheets

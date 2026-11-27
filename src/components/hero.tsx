@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Bell } from '@/components/notifications';
-import { colors } from '@/constants/theme';
+import { colors, themed } from '@/constants/theme';
 
 const SEAL = require('../../assets/images/splash-icon.png');
 
@@ -17,8 +17,8 @@ export function HeroBackdrop({ sealSize = 220 }: { sealSize?: number }) {
   );
 }
 
-/** Top row of a dashboard header: small seal + "CvSU · ROLE" on the left, a round log-out button on the right. */
-export function HeroTopBar({ role, onSignOut, onBell }: { role: string; onSignOut: () => void; onBell?: () => void }) {
+/** Top row of a dashboard header: small seal + "CvSU · ROLE" on the left, notifications and Settings on the right. */
+export function HeroTopBar({ role, onSettings, onSignOut, onBell }: { role: string; onSettings?: () => void; onSignOut?: () => void; onBell?: () => void }) {
   return (
     <View style={styles.top}>
       <View style={styles.brand}>
@@ -30,15 +30,15 @@ export function HeroTopBar({ role, onSignOut, onBell }: { role: string; onSignOu
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {onBell ? <Bell onPress={onBell} /> : null}
-        <Pressable onPress={onSignOut} hitSlop={8} accessibilityLabel="Log out" style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="log-out-outline" size={20} color={colors.onPrimary} />
+        <Pressable onPress={onSettings ?? onSignOut} hitSlop={8} accessibilityLabel={onSettings ? 'Settings' : 'Log out'} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}>
+          <Ionicons name={onSettings ? 'settings-outline' : 'log-out-outline'} size={20} color={colors.onPrimary} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ring: { position: 'absolute', borderRadius: 999, borderWidth: 28, borderColor: 'rgba(255,255,255,0.05)' },
   watermark: { position: 'absolute', opacity: 0.07 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
@@ -56,4 +56,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

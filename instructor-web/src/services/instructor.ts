@@ -20,6 +20,8 @@ export type MyClass = {
   year_level: number;
   room: string;
   updated_at: string;
+  /** Extra meeting the instructor added in the mobile app (not on the official schedule). */
+  extra?: boolean;
 };
 
 export type MyApplication = {
@@ -53,7 +55,7 @@ export async function fetchInstructorData(): Promise<InstructorData> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Not signed in');
   const uid = auth.user.id;
-  const [profile, application, term, schedule, subjects, sections, notifications] = await Promise.all([
+  const [profile, application, term, schedule, subjects, sections, notifications, extras] = await Promise.all([
     supabase.from('profiles').select('full_name, email, created_at').eq('id', uid).single(),
     supabase.from('instructor_profiles').select('employee_id, department, contact_number, status, submitted_at, reviewed_at, proof_path').eq('user_id', uid).maybeSingle(),
     supabase.from('app_settings').select('current_semester, current_academic_year, semester_start, semester_end').maybeSingle(),
@@ -61,14 +63,33 @@ export async function fetchInstructorData(): Promise<InstructorData> {
     supabase.from('subjects').select('*'),
     supabase.from('sections').select('*'),
     supabase.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(100),
+    // Extra meetings added in the mobile app (Schedule → Extra class meeting) for this instructor's classes.
+    supabase.from('class_schedules').select('id, day_of_week, start_time, end_time, room, created_at, classes!inner(code, title, section, instructor_id)').eq('classes.instructor_id', uid),
   ]);
-  const mine = must(schedule) as MyClass[];
+  const t = must(term) as Settings | null;
+  type ExtraRow = { id: string; day_of_week: number; start_time: string; end_time: string; room: string; created_at: string; classes: { code: string; title: string; section: string } };
+  const added: MyClass[] = (must(extras) as unknown as ExtraRow[]).map((e) => ({
+    id: e.id,
+    day_of_week: e.day_of_week,
+    start_time: e.start_time,
+    end_time: e.end_time,
+    semester: t?.current_semester ?? '',
+    academic_year: t?.current_academic_year ?? '',
+    subject_code: e.classes.code,
+    subject_name: e.classes.title,
+    section_name: e.classes.section,
+    year_level: 0,
+    room: e.room,
+    updated_at: e.created_at,
+    extra: true,
+  }));
+  const mine = [...(must(schedule) as MyClass[]), ...added].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
   const codes = new Set(mine.map((c) => c.subject_code.toLowerCase()));
   const names = new Set(mine.map((c) => c.section_name.toLowerCase()));
   return {
     profile: must(profile) as InstructorData['profile'],
     application: must(application) as MyApplication | null,
-    term: must(term) as Settings | null,
+    term: t,
     schedule: mine,
     subjects: (must(subjects) as Subject[]).filter((s) => codes.has(s.code.toLowerCase())),
     sections: (must(sections) as Section[]).filter((s) => names.has(s.name.toLowerCase())),

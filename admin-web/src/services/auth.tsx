@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'TOKEN_REFRESHED') return setSession(s);
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => void apply(s), 0);
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => void apply(s), 0);
     });
     return () => {
       alive = false;

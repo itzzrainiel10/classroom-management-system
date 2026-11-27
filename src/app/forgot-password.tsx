@@ -6,7 +6,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Caption, Card, Field } from '@/components/ui';
-import { colors, radius, shadow, text } from '@/constants/theme';
+import { colors, radius, shadow, text, themed } from '@/constants/theme';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -68,7 +68,7 @@ export default function ForgotPassword() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => router.back()} hitSlop={10} style={({ pressed }) => [styles.back, pressed && { opacity: 0.7 }]} accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={20} color={colors.text} />
@@ -162,7 +162,7 @@ export default function ForgotPassword() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: 22, gap: 22, flexGrow: 1 },
   back: {
@@ -192,4 +192,4 @@ const styles = StyleSheet.create({
   noticeOk: { backgroundColor: colors.primarySoft },
   noticeErr: { backgroundColor: colors.dangerSoft },
   noticeText: { flex: 1, fontSize: 13.5, lineHeight: 19, fontWeight: '600' },
-});
+}));

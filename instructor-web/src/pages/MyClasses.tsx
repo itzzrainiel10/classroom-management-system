@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { toast } from '../components/toast';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, Modal, PageHeader, Person } from '../components/ui';
 import { useData } from '../hooks/useData';
@@ -27,6 +28,7 @@ export default function MyClasses() {
   const cls = classes.data?.find((c) => c.id === classId);
   const needle = q.trim().toLowerCase();
   const rows = (roster.data ?? []).filter((s) => !needle || s.full_name.toLowerCase().includes(needle) || s.email.includes(needle));
+  const { shown: pageRows, paging } = usePaged(rows, `${classId}|${needle}`);
   const refreshAll = async () => {
     await Promise.all([roster.refresh(), classes.refresh()]);
   };
@@ -96,33 +98,36 @@ export default function MyClasses() {
                 <Loading />
               </div>
             ) : rows.length ? (
-              <div className="table-wrap" style={{ marginTop: roster.data.length > 5 ? 12 : 0 }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Student</th>
-                      <th className="num" aria-label="Actions" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((s) => (
-                      <tr key={s.id}>
-                        <td>
-                          <Person name={s.full_name || s.email} sub={s.email} />
-                        </td>
-                        <td className="num" style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setRename(s)}>
-                            <Icon name="edit" size={14} /> Rename
-                          </button>
-                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setDel(s)} aria-label={`Remove ${s.full_name || s.email}`}>
-                            <Icon name="trash" size={14} /> Remove
-                          </button>
-                        </td>
+              <>
+                <div className="table-wrap" style={{ marginTop: roster.data.length > 5 ? 12 : 0 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Student</th>
+                        <th className="num" aria-label="Actions" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {pageRows.map((s) => (
+                        <tr key={s.id}>
+                          <td>
+                            <Person name={s.full_name || s.email} sub={s.email} />
+                          </td>
+                          <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setRename(s)}>
+                              <Icon name="edit" size={14} /> Rename
+                            </button>
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setDel(s)} aria-label={`Remove ${s.full_name || s.email}`}>
+                              <Icon name="trash" size={14} /> Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pager paging={paging} noun="students" />
+              </>
             ) : (
               <Empty icon="users" title={needle ? 'No matching students' : 'No students yet'} body={needle ? 'Try another name or email.' : 'Add students by their CvSU email. They see this class when they sign in to the mobile app with that email.'}>
                 {!needle && cls ? (
@@ -269,7 +274,7 @@ function AddMany({ classId, label, onClose, onSaved }: { classId: string; label:
       <Field label="Students" hint="Format: email, Full Name — one per line. You can paste two columns straight from Excel or Google Sheets.">
         <textarea
           className="textarea"
-          style={{ minHeight: 180, fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13 }}
+          style={{ minHeight: 180, fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 'calc(13px * var(--text-scale))' }}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={'ella.garcia@cvsu.edu.ph, Ella Garcia\npaolo.ramos@cvsu.edu.ph, Paolo Ramos'}

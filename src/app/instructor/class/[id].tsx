@@ -3,9 +3,11 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 
+import { AnnouncementCard } from '@/components/announcement-card';
 import { Body, Button, Caption, Card, Empty, Field, H1, H2, Label, ListCard, ListItem, Loading, OfflineNote, Pill, QuizStatusPill, Row, Screen, Segmented } from '@/components/ui';
 import { colors, radius } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
+import { useAuth } from '@/lib/auth';
 import { addStudentOp, deleteOp, fetchClassDetail, removeStudentOp, type Student } from '@/lib/data';
 import { dayName, fmtDate, fmtDateTime, fmtTime } from '@/lib/format';
 import { pendingDeletes, pendingRows } from '@/lib/offline';
@@ -16,6 +18,7 @@ type Detail = Awaited<ReturnType<typeof fetchClassDetail>>;
 export default function ManageClass() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { save } = useOutbox();
+  const { fullName } = useAuth();
   const [tab, setTab] = useState<'students' | 'activities' | 'settings'>('students');
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
@@ -174,11 +177,7 @@ export default function ManageClass() {
           <Label>Announcements</Label>
           {data.announcements.length ? (
             data.announcements.map((a) => (
-              <Card key={a.id} style={{ gap: 4 }}>
-                <H2>{a.title}</H2>
-                <Body>{a.message}</Body>
-                <Caption>Posted {fmtDate(a.created_at)}</Caption>
-              </Card>
+              <AnnouncementCard key={a.id} a={a} fallbackName={fullName || 'You'} />
             ))
           ) : (
             <Caption>No announcements yet.</Caption>
@@ -210,7 +209,13 @@ export default function ManageClass() {
             )}
             <Button title="Add schedule" icon="calendar" small variant="secondary" onPress={() => router.push({ pathname: '/instructor/schedule-new', params: { classId: cls.id } })} />
           </Card>
-          <Button title="Delete class" icon="trash-outline" variant="danger" onPress={deleteClass} />
+          {cls.subject_id ? (
+            // Classes from the official schedule stay until the administrator removes the schedule,
+            // so this app and the website always list the same classes.
+            <Caption style={{ textAlign: 'center' }}>This class comes from the official schedule. To remove it, ask the administrator to delete its schedule.</Caption>
+          ) : (
+            <Button title="Delete class" icon="trash-outline" variant="danger" onPress={deleteClass} />
+          )}
         </>
       ) : null}
     </Screen>

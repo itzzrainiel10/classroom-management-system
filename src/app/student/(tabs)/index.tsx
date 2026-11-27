@@ -1,20 +1,23 @@
 import { router } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HeroBackdrop, HeroTopBar } from '@/components/hero';
 import { MenuRow } from '@/components/menu-row';
-import { ChooseSectionCard } from '@/components/section-picker';
+import { RenewalCard } from '@/components/renewal-card';
+import { SemesterEndedCard, useSemesterEnded } from '@/components/semester';
 import { OfficialClassCard, TermBanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
 import { UploadStatus } from '@/components/upload-status';
 import { Button, Caption, Card, H2, Label, OfflineNote, OnPrimary, ProgressBar, Screen } from '@/components/ui';
-import { colors, radius, shadow } from '@/constants/theme';
+import { colors, radius, shadow, themed } from '@/constants/theme';
 import { useStudentHome } from '@/hooks/use-student';
 import { useAuth } from '@/lib/auth';
 import { firstName, fmtDate } from '@/lib/format';
 
 export default function StudentHome() {
-  const { fullName, signOut } = useAuth();
+  const { fullName } = useAuth();
+  // Between semesters Home shows only the semester-ended card (and renewal), nothing else.
+  const ended = useSemesterEnded();
   const { data, offline, savedAt, refresh } = useStudentHome();
   const quizzes = data?.quizzes ?? [];
   const timetable = useTimetable();
@@ -25,20 +28,15 @@ export default function StudentHome() {
   const progress = quizzes.length ? done / quizzes.length : 0;
   const next = quizzes.filter((q) => q.attempts.length === 0).sort((a, b) => (a.due_at ?? '9').localeCompare(b.due_at ?? '9'))[0];
 
-  const confirmSignOut = () =>
-    Alert.alert('Log out?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: signOut },
-    ]);
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
       <Screen onRefresh={refresh}>
         <View style={styles.hero}>
           <HeroBackdrop />
-          <HeroTopBar role="Student" onSignOut={confirmSignOut} onBell={() => router.push('/student/notifications')} />
+          <HeroTopBar role="Student" onSettings={() => router.push('/settings')} onBell={() => router.push('/student/notifications')} />
           <OnPrimary size="lg">Hello, {fullName ? firstName(fullName) : 'Student'}!</OnPrimary>
           <OnPrimary>Welcome back. Keep moving forward.</OnPrimary>
+          {ended ? null : (
           <View style={styles.progress}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={styles.progressLabel}>Your progress</Text>
@@ -49,12 +47,16 @@ export default function StudentHome() {
               {done} of {quizzes.length} quizzes completed{progress >= 0.8 ? ' · Keep going!' : ''}
             </Caption>
           </View>
+          )}
         </View>
 
         <OfflineNote show={offline} savedAt={savedAt} />
         <UploadStatus />
 
-        {timetable.data && !timetable.data.section ? <ChooseSectionCard onChosen={timetable.refresh} /> : null}
+        <SemesterEndedCard role="student" />
+        <RenewalCard role="student" />
+        {ended ? null : (
+          <>
         <Card style={{ gap: 10 }}>
           <Label>Today’s classes</Label>
           <TermBanner term={timetable.data?.term} extra={timetable.data?.section?.name ?? 'No section yet'} />
@@ -92,15 +94,18 @@ export default function StudentHome() {
           <MenuRow icon="megaphone" title="Announcements" body="The latest from your instructor." onPress={() => router.push('/student/announcements')} />
           <MenuRow icon="checkmark-done" title="Attendance" body="Your attendance in each class." onPress={() => router.push('/student/attendance')} />
           <MenuRow icon="calendar" title="Schedule" body="Your week at a glance." onPress={() => router.push('/student/schedule')} />
+          <MenuRow icon="archive" title="My Semesters" body="Grades and attendance from past semesters." onPress={() => router.push('/student/semesters')} />
         </View>
+          </>
+        )}
       </Screen>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   hero: { backgroundColor: colors.primary, marginHorizontal: -20, marginTop: -20, padding: 20, paddingTop: 12, paddingBottom: 26, gap: 6, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, overflow: 'hidden' },
   progress: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 16, gap: 10, marginTop: 16, ...shadow.lg },
   progressLabel: { fontWeight: '800', color: colors.text },
   progressValue: { fontWeight: '800', color: colors.primary },
-});
+}));

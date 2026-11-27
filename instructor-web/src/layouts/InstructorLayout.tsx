@@ -7,6 +7,7 @@ import { fetchInstructorData, markNotificationsRead, type InstructorData } from 
 import { fmtDateTime } from '../services/format';
 import { Icon, type IconName } from '../components/icons';
 import { Avatar, Confirm, ErrorNote, Loading } from '../components/ui';
+import { A11yMenuItem } from '../components/a11y';
 
 type Ctx = { d: InstructorData; refresh: () => Promise<void> };
 const InstructorCtx = createContext<Ctx | null>(null);
@@ -181,25 +182,39 @@ export function InstructorLayout() {
               <Icon name="chevronDown" size={14} />
             </button>
             {menu === 'profile' ? (
-              <div className="dropdown" role="menu">
-                <div className="dropdown-head">
-                  <b>{name || 'Instructor'}</b>
-                  <small>{email}</small>
+              <div className="dropdown pm" role="menu">
+                <div className="pm-head">
+                  <Avatar name={name || 'Instructor'} />
+                  <div className="pm-who">
+                    <b>{name || 'Instructor'}</b>
+                    <small>{email}</small>
+                    <span className="pm-role">Instructor</span>
+                  </div>
                 </div>
-                <Link to="/profile" role="menuitem">
-                  <Icon name="user" size={16} /> My Profile
-                </Link>
-                <Link to="/settings" role="menuitem">
-                  <Icon name="edit" size={16} /> Account Settings
-                </Link>
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMenu(null);
-                    setAskSignOut(true);
-                  }}>
-                  <Icon name="logout" size={16} /> Sign out
-                </button>
+                <div className="pm-group">
+                  <span className="pm-label">Account</span>
+                  <Link to="/profile" role="menuitem">
+                    <Icon name="user" size={16} /> My Profile
+                  </Link>
+                  <Link to="/settings" role="menuitem">
+                    <Icon name="edit" size={16} /> Account Settings
+                  </Link>
+                </div>
+                <div className="pm-group">
+                  <span className="pm-label">Preferences</span>
+                  <A11yMenuItem />
+                </div>
+                <div className="pm-foot">
+                  <button
+                    className="pm-signout"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenu(null);
+                      setAskSignOut(true);
+                    }}>
+                    <Icon name="logout" size={16} /> Sign out
+                  </button>
+                </div>
               </div>
             ) : null}
             </div>

@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Label, Segmented } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { fmtDate, fmtTime, minutesToTime, timeToMinutes } from '@/lib/format';
 import type { ClassRef } from '@/lib/data';
 
@@ -103,7 +103,7 @@ export function ClassPicker({ classes, value, onChange }: { classes: (ClassRef &
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -120,4 +120,4 @@ const styles = StyleSheet.create({
   classOptActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   classCode: { fontSize: 15, fontWeight: '800', color: colors.text },
   classTitle: { fontSize: 13, color: colors.textSoft },
-});
+}));

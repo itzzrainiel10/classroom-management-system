@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Caption, Card, Empty, H2, Label, Loading, Pill, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { fetchLayout, fetchOmrExams, fetchScans, fetchSheets, omrQueue, STATUS_LABEL, uploadAndProcess, type OmrExam, type OmrScan, type OmrSheet, type QueueItem } from '@/lib/omr';
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -216,7 +216,7 @@ export default function OmrScanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   thumb: { width: 46, height: 64, borderRadius: radius.sm, backgroundColor: colors.line },
   name: { fontSize: 14.5, fontWeight: '700', color: colors.text },
-});
+}));

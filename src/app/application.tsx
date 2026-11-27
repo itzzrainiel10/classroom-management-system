@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeroBackdrop, HeroTopBar } from '@/components/hero';
 import { NoticeCard, useNotifications } from '@/components/notifications';
 import { Button, Caption, Card, Field, Label, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { fetchMyApplication, submitApplication, uploadProof, type ApplicationRow } from '@/lib/data';
 import { fmtDateTime } from '@/lib/format';
@@ -44,7 +44,7 @@ export default function ApplicationScreen() {
   useEffect(() => setName(fullName), [fullName]);
 
   const rejected = application?.status === 'rejected';
-  const incomplete = !!row && (!row.employee_id || !row.department || !row.contact_number);
+  const incomplete = !!row && (!row.employee_id || !row.department);
 
   const pick = async () => {
     const res = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
@@ -97,8 +97,8 @@ export default function ApplicationScreen() {
               : 'An administrator must verify that you are a CvSU instructor before the instructor dashboard opens.'}
           </Text>
           <View style={[styles.status, rejected ? styles.statusBad : styles.statusWait]}>
-            <Ionicons name={rejected ? 'close-circle' : 'time'} size={18} color={rejected ? colors.danger : '#7A5F00'} />
-            <Text style={[styles.statusText, { color: rejected ? colors.danger : '#7A5F00' }]}>{rejected ? 'Rejected' : 'Pending review'}</Text>
+            <Ionicons name={rejected ? 'close-circle' : 'time'} size={18} color={rejected ? colors.danger : colors.goldInk} />
+            <Text style={[styles.statusText, { color: rejected ? colors.danger : colors.goldInk }]}>{rejected ? 'Rejected' : 'Pending review'}</Text>
             {row?.submitted_at ? <Text style={styles.statusDate}>Sent {fmtDateTime(row.submitted_at)}</Text> : null}
           </View>
         </View>
@@ -114,7 +114,7 @@ export default function ApplicationScreen() {
         {incomplete ? (
           <Card tone="gold" style={{ gap: 4 }}>
             <Text style={{ fontWeight: '800', color: colors.text }}>Finish your application</Text>
-            <Caption style={{ color: colors.text }}>Add your employee / faculty ID, department and contact number so an administrator can verify you.</Caption>
+            <Caption style={{ color: colors.text }}>Add your employee / faculty ID and department so an administrator can verify you.</Caption>
           </Card>
         ) : null}
 
@@ -123,7 +123,6 @@ export default function ApplicationScreen() {
           <Field label="Full name" value={name} onChangeText={setName} placeholder="e.g. Evelyn Morgan" autoComplete="name" />
           <Field label="Employee / Faculty ID" value={employeeId} onChangeText={setEmployeeId} placeholder="e.g. CvSU-2019-0142" autoCapitalize="characters" />
           <Field label="Department" value={department} onChangeText={setDepartment} placeholder="e.g. Department of Information Technology" />
-          <Field label="Contact number" value={contact} onChangeText={setContact} placeholder="e.g. 0917 123 4567" keyboardType="phone-pad" autoComplete="tel" />
           <View style={{ gap: 6 }}>
             <Text style={styles.fieldLabel}>Proof of instructor identity (optional)</Text>
             <Caption>Faculty ID, appointment paper or certificate of employment. PDF or photo, up to 10 MB.</Caption>
@@ -159,7 +158,7 @@ export default function ApplicationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   hero: { backgroundColor: colors.primary, marginHorizontal: -20, marginTop: -20, padding: 20, paddingTop: 12, paddingBottom: 24, gap: 8, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, overflow: 'hidden' },
   title: { color: colors.onPrimary, fontSize: 26, fontWeight: '800', letterSpacing: -0.6 },
   sub: { color: colors.onPrimarySoft, fontSize: 14, lineHeight: 20 },
@@ -170,4 +169,4 @@ const styles = StyleSheet.create({
   statusDate: { color: colors.textSoft, fontSize: 12 },
   fieldLabel: { fontSize: 13, fontWeight: '700', color: colors.text },
   notice: { flexDirection: 'row', padding: 12, borderRadius: radius.md },
-});
+}));

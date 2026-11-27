@@ -1,5 +1,6 @@
 import { PercentBars } from '../components/charts';
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { toast } from '../components/toast';
 import { CardHead, Empty, Loading, Tile } from '../components/ui';
 import { useWorkspace } from '../layouts/AdminLayout';
@@ -55,6 +56,7 @@ export function AttendanceReport({ classes, since }: { classes: ClassRow[]; sinc
     byStudentClass.set(key, cur);
   }
   const atRisk = [...byStudentClass.values()].filter((x) => x.t >= 2 && x.p / x.t < 0.8).sort((a, b) => a.p / a.t - b.p / b.t);
+  const { shown: pageRows, paging } = usePaged(perClass);
 
   const sections = [...new Set(perClass.map((x) => x.c.section))].sort();
   const sectionRows = sections.map((sec) => {
@@ -78,7 +80,7 @@ export function AttendanceReport({ classes, since }: { classes: ClassRow[]; sinc
     <>
       <div className="page-head" style={{ marginTop: 8 }}>
         <div>
-          <h1 style={{ fontSize: 19 }}>Attendance</h1>
+          <h1 style={{ fontSize: 'calc(19px * var(--text-scale))' }}>Attendance</h1>
           <p>Taken by instructors on the website or in the mobile app (Present / Absent).</p>
         </div>
         <div className="head-actions">
@@ -102,37 +104,40 @@ export function AttendanceReport({ classes, since }: { classes: ClassRow[]; sinc
             <div className="card">
               <CardHead title="Attendance by class" sub="Lowest rate first" />
               {perClass.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Class / section</th>
-                        <th>Instructor</th>
-                        <th className="num">Meetings</th>
-                        <th className="num">Present</th>
-                        <th className="num">Absent</th>
-                        <th className="num">Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {perClass.map((x) => (
-                        <tr key={x.c.id}>
-                          <td>
-                            <b>{classLabel(x.c)}</b>
-                            <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{x.c.title}</div>
-                          </td>
-                          <td>{nameOf(w, x.c.instructor_id)}</td>
-                          <td className="num">{x.meetings}</td>
-                          <td className="num">{x.present}</td>
-                          <td className="num">{x.absent}</td>
-                          <td className="num">
-                            <span className={`badge ${(x.rate ?? 0) >= 90 ? 'green' : (x.rate ?? 0) >= 80 ? 'gold' : 'red'}`}>{x.rate}%</span>
-                          </td>
+                <>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Class / section</th>
+                          <th>Instructor</th>
+                          <th className="num">Meetings</th>
+                          <th className="num">Present</th>
+                          <th className="num">Absent</th>
+                          <th className="num">Rate</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {pageRows.map((x) => (
+                          <tr key={x.c.id}>
+                            <td>
+                              <b>{classLabel(x.c)}</b>
+                              <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{x.c.title}</div>
+                            </td>
+                            <td>{nameOf(w, x.c.instructor_id)}</td>
+                            <td className="num">{x.meetings}</td>
+                            <td className="num">{x.present}</td>
+                            <td className="num">{x.absent}</td>
+                            <td className="num">
+                              <span className={`badge ${(x.rate ?? 0) >= 90 ? 'green' : (x.rate ?? 0) >= 80 ? 'gold' : 'red'}`}>{x.rate}%</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pager paging={paging} noun="classes" />
+                </>
               ) : (
                 <Empty icon="calendar" title="No attendance in this period" body="Instructors take attendance on the Instructor website or in the mobile app." />
               )}

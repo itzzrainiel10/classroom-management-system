@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors } from '@/constants/theme';
+import { colors, themed } from '@/constants/theme';
 import type { Role } from '@/lib/auth';
 
 const SEAL = require('../../assets/images/splash-icon.png');
@@ -99,7 +99,7 @@ export default function Welcome() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: PAGE, overflow: 'hidden' },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 10 },
 
@@ -140,4 +140,4 @@ const styles = StyleSheet.create({
   cardBody: { fontSize: 13.5, color: '#48514C', lineHeight: 18, textAlign: 'center' },
   arrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   footer: { color: '#68716B', fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textAlign: 'center', marginTop: 6 },
-});
+}));

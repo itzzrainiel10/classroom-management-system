@@ -40,7 +40,7 @@ export default function StudentQuizzes() {
               <Card style={{ gap: 8 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <Label>{a ? 'Completed' : 'Available'}</Label>
-                  {a ? (a.needs_grading ? <Pill label="Being graded" tone="gold" /> : <Pill label={`${pct(a.score, a.total)}%`} tone={pct(a.score, a.total) >= q.passing_score ? 'green' : 'red'} />) : <Pill label={`Due ${fmtDate(q.due_at)}`} tone="gold" />}
+                  {a ? (a.needs_grading ? <Pill label="Being graded" tone="gold" /> : <Pill label={`${pct(a.score, a.total)}% · ${pct(a.score, a.total) >= q.passing_score ? 'Passed' : 'Failed'}`} tone={pct(a.score, a.total) >= q.passing_score ? 'green' : 'red'} />) : <Pill label={`Due ${fmtDate(q.due_at)}`} tone="gold" />}
                 </Row>
                 <View>
                   <H2>{q.title}</H2>

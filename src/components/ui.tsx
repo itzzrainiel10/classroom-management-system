@@ -1,7 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,9 +17,27 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, shadow, text } from '@/constants/theme';
+import { colors, radius, shadow, text, themed } from '@/constants/theme';
+import { phDigits, phLocal, phStored } from '@/lib/phone';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
+
+/**
+ * Height of the on-screen keyboard (0 when hidden). Android draws the app edge-to-edge, so the window
+ * no longer shrinks for the keyboard: screens add this much space themselves.
+ */
+export function useKeyboardHeight() {
+  const [h, setH] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setH(e.endCoordinates.height));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return h;
+}
 
 export function Screen({
   children,
@@ -30,17 +50,23 @@ export function Screen({
   refreshing?: boolean;
   footer?: ReactNode;
 }) {
+  // iOS moves the content above the keyboard by itself (automaticallyAdjustKeyboardInsets);
+  // on Android we add the keyboard's height as space, so every field can be scrolled into view.
+  const kb = useKeyboardHeight();
+  const androidKb = Platform.OS === 'android' ? kb : 0;
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.screenContent}
+        contentContainerStyle={[styles.screenContent, androidKb && !footer ? { paddingBottom: 56 + androidKb } : null]}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} /> : undefined}>
         {children}
       </ScrollView>
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {/* The bottom bar (Save, Submit…) sits just above the keyboard while it is open. */}
+      {footer ? <View style={[styles.footer, kb ? { paddingBottom: kb + 12 } : null]}>{footer}</View> : null}
     </View>
   );
 }
@@ -76,11 +102,11 @@ export function Card({
   return <View style={[styles.card, tone !== 'plain' && toneStyles[tone], style]}>{children}</View>;
 }
 
-const toneStyles = StyleSheet.create({
+const toneStyles = themed(() => StyleSheet.create({
   primary: { backgroundColor: colors.primary, borderColor: colors.primary, ...shadow.primary },
   soft: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft, boxShadow: 'none' },
-  gold: { backgroundColor: colors.goldSoft, borderColor: '#F3E3A0' },
-});
+  gold: { backgroundColor: colors.goldSoft, borderColor: colors.goldLine },
+}));
 
 type TextProps = { children: ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number };
 export const H1 = (p: TextProps) => <Text {...p} style={[text.h1, p.style]} />;
@@ -92,13 +118,13 @@ export const OnPrimary = (p: TextProps & { size?: 'lg' | 'sm' }) => (
   <Text {...p} style={[p.size === 'lg' ? styles.onPrimaryLg : styles.onPrimarySm, p.style]} />
 );
 
-const buttonVariants = {
+const buttonVariants = themed(() => ({
   primary: { bg: colors.primary, fg: colors.onPrimary, border: colors.primary, lift: shadow.primary },
   gold: { bg: colors.gold, fg: colors.text, border: colors.gold, lift: shadow.sm },
   secondary: { bg: colors.card, fg: colors.text, border: colors.line, lift: shadow.sm },
   ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent', lift: undefined },
-  danger: { bg: colors.card, fg: colors.danger, border: '#F2D3CF', lift: undefined },
-} as const;
+  danger: { bg: colors.card, fg: colors.danger, border: colors.dangerLine, lift: undefined },
+}) as const);
 
 export function Button({
   title,
@@ -172,15 +198,58 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
   );
 }
 
-export function Pill({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'green' | 'gold' | 'red' }) {
+/**
+ * Philippine mobile number: a fixed "+63", then up to 10 digits starting with 9, spaced as typed
+ * (917 123 4567). `value` / `onChange` use the saved form "+63 917 123 4567".
+ */
+export function PhoneField({ label, value, onChange, hint }: { label: string; value: string; onChange: (stored: string) => void; hint?: string }) {
+  const [focused, setFocused] = useState(false);
+  const digits = phDigits(value);
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={[styles.input, styles.phoneRow, focused && styles.inputFocused]}>
+        <View style={styles.phonePrefix}>
+          <Text style={styles.phonePrefixText}>🇵🇭 +63</Text>
+        </View>
+        <TextInput
+          value={phLocal(digits)}
+          onChangeText={(t) => onChange(phStored(t))}
+          placeholder="917 123 4567"
+          placeholderTextColor={colors.muted}
+          keyboardType="number-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          maxLength={12}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={styles.phoneInput}
+          accessibilityLabel={`${label}, plus 63`}
+        />
+      </View>
+      {hint ? <Caption>{hint}</Caption> : null}
+    </View>
+  );
+}
+
+/** Icon that goes with each status colour, so a status never depends on colour alone. */
+const PILL_ICON: Record<'muted' | 'green' | 'gold' | 'red', IconName | null> = {
+  muted: null,
+  green: 'checkmark-circle',
+  gold: 'time',
+  red: 'close-circle',
+};
+
+export function Pill({ label, tone = 'muted', icon }: { label: string; tone?: 'muted' | 'green' | 'gold' | 'red'; /** override, or null for none */ icon?: IconName | null }) {
   const t = {
     muted: { bg: colors.background, fg: colors.textSoft, border: colors.line },
     green: { bg: colors.primarySoft, fg: colors.primary, border: colors.primarySoft },
-    gold: { bg: colors.goldSoft, fg: '#7A5F00', border: colors.goldSoft },
+    gold: { bg: colors.goldSoft, fg: colors.goldInk, border: colors.goldSoft },
     red: { bg: colors.dangerSoft, fg: colors.danger, border: colors.dangerSoft },
   }[tone];
   return (
-    <View style={[styles.pill, { backgroundColor: t.bg, borderColor: t.border }]}>
+    <View style={[styles.pill, { backgroundColor: t.bg, borderColor: t.border, flexDirection: 'row', alignItems: 'center', gap: 4 }]} accessibilityLabel={label}>
+      {(icon === undefined ? PILL_ICON[tone] : icon) ? <Ionicons name={(icon === undefined ? PILL_ICON[tone] : icon)!} size={13} color={t.fg} /> : null}
       <Text style={[styles.pillText, { color: t.fg }]}>{label}</Text>
     </View>
   );
@@ -261,18 +330,21 @@ export function Segmented<T extends string | number>({
   options,
   value,
   onChange,
+  small,
 }: {
   options: { label: string; value: T }[];
   value: T;
   onChange: (v: T) => void;
+  /** Compact version (e.g. Settings). */
+  small?: boolean;
 }) {
   return (
-    <View style={styles.segmented}>
+    <View style={[styles.segmented, small && styles.segmentedSmall]}>
       {options.map((o) => {
         const active = o.value === value;
         return (
-          <Pressable key={String(o.value)} onPress={() => onChange(o.value)} style={[styles.segment, active && styles.segmentActive]}>
-            <Text numberOfLines={1} style={[styles.segmentText, active && { color: colors.primary }]}>
+          <Pressable key={String(o.value)} onPress={() => onChange(o.value)} style={[styles.segment, small && styles.segmentSmall, active && styles.segmentActive]}>
+            <Text numberOfLines={1} style={[styles.segmentText, small && styles.segmentTextSmall, active && { color: colors.primary }]}>
               {o.label}
             </Text>
           </Pressable>
@@ -312,7 +384,7 @@ export function Loading() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   screenContent: { padding: 20, gap: 16, paddingBottom: 56 },
   footer: { padding: 16, paddingBottom: 28, backgroundColor: colors.card, ...shadow.lg },
   crumbChip: {
@@ -353,6 +425,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 0, paddingLeft: 0, gap: 10, overflow: 'hidden' },
+  phonePrefix: { alignSelf: 'stretch', justifyContent: 'center', paddingHorizontal: 12, backgroundColor: colors.primarySoft, borderRightWidth: 1, borderRightColor: colors.line },
+  phonePrefixText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  phoneInput: { flex: 1, paddingVertical: 13, paddingRight: 12, fontSize: 16, color: colors.text, letterSpacing: 0.5 },
   inputFocused: { borderColor: colors.primary, boxShadow: '0px 0px 0px 3px rgba(7, 91, 57, 0.12)' },
   pill: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', borderWidth: 1 },
   pillText: { fontSize: 12, fontWeight: '700' },
@@ -370,11 +446,14 @@ const styles = StyleSheet.create({
   },
   listIcon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   emptyIcon: { width: 60, height: 60, borderRadius: radius.pill, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  segmented: { flexDirection: 'row', backgroundColor: '#E8EDE9', borderRadius: radius.md, padding: 4, gap: 4 },
+  segmented: { flexDirection: 'row', backgroundColor: colors.track, borderRadius: radius.md, padding: 4, gap: 4 },
   segment: { flex: 1, paddingVertical: 10, paddingHorizontal: 4, borderRadius: radius.sm, alignItems: 'center' },
   segmentActive: { backgroundColor: colors.card, ...shadow.sm },
   segmentText: { fontSize: 14, fontWeight: '700', color: colors.textSoft },
+  segmentedSmall: { padding: 3, gap: 3, borderRadius: radius.sm },
+  segmentSmall: { paddingVertical: 6, borderRadius: 8 },
+  segmentTextSmall: { fontSize: 12.5 },
   track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.mint, overflow: 'hidden' },
   bar: { height: 8, borderRadius: radius.pill },
   offline: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12, borderRadius: radius.md, backgroundColor: colors.goldSoft },
-});
+}));

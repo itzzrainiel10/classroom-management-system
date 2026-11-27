@@ -141,7 +141,9 @@ export default function QuizResults() {
                     <Caption style={{ fontWeight: '800', fontSize: 15, color: a.needs_grading ? colors.textSoft : p >= quiz.passing_score ? colors.primary : colors.danger }}>
                       {a.score} / {a.total}
                     </Caption>
-                    <Caption>{p}%</Caption>
+                    <Caption>
+                      {p}%{a.needs_grading ? '' : p >= quiz.passing_score ? ' · Passed' : ' · Failed'}
+                    </Caption>
                   </View>
                 }
               />

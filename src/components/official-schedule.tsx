@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Caption, Card, Empty, H2, Label, Row } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchMyTimetable, type OfficialClass, type Term } from '@/lib/data';
 import { DAY_SHORT, DAYS, fmtTime } from '@/lib/format';
@@ -266,7 +266,7 @@ export function ScheduleTable({ classes, emptyBody, viewer = 'instructor' }: { c
         const newGroup = student ? newDay : newSection;
         if (newGroup) group++;
         return (
-          <View key={c.id} style={[styles.tr, newGroup && i > 0 && styles.dayBreak, group % 2 === 1 && { backgroundColor: '#F8FAF8' }]}>
+          <View key={c.id} style={[styles.tr, newGroup && i > 0 && styles.dayBreak, group % 2 === 1 && { backgroundColor: colors.rowAlt }]}>
             {student ? null : (
               <Text style={[styles.td, styles.cSec, { fontWeight: '700', color: colors.text }]} numberOfLines={2}>
                 {newSection ? c.section_name : ''}
@@ -307,7 +307,7 @@ export function weeklyHours(classes: OfficialClass[]) {
   return Math.round((mins / 60) * 10) / 10;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   term: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primarySoft, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
   termText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   termDates: { color: colors.textSoft, fontSize: 12, marginTop: 1 },
@@ -319,9 +319,9 @@ const styles = StyleSheet.create({
   dayName: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: colors.muted },
   dayNum: { fontSize: 16, fontWeight: '800', color: colors.text },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
-  table: { backgroundColor: colors.card, borderWidth: 1, borderColor: '#D5DDD7', borderRadius: 6, overflow: 'hidden' },
+  table: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.tableLine, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 7, gap: 4 },
-  thead: { backgroundColor: '#EEF2EF', borderBottomWidth: 1, borderBottomColor: '#D5DDD7', paddingVertical: 6 },
+  thead: { backgroundColor: colors.tableHead, borderBottomWidth: 1, borderBottomColor: colors.tableLine, paddingVertical: 6 },
   dayBreak: { borderTopWidth: 1, borderTopColor: colors.line },
   th: { fontSize: 10.5, fontWeight: '700', color: colors.textSoft },
   td: { fontSize: 11, color: colors.textSoft },
@@ -331,4 +331,4 @@ const styles = StyleSheet.create({
   cSubj: { flex: 1.3 },
   cSec: { flex: 1 },
   cRoom: { flex: 1 },
-});
+}));

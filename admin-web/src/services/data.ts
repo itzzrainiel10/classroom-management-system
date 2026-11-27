@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 /* ---------- Types ---------- */
 
 export type Role = 'admin' | 'instructor' | 'student';
-export type Profile = { id: string; full_name: string; email: string; student_number: string; status: 'active' | 'suspended'; section_id: string | null; created_at: string };
+export type Profile = { id: string; full_name: string; email: string; student_number: string; status: 'active' | 'suspended'; suspension_reason?: string; section_id: string | null; created_at: string };
 export type AppStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type InstructorProfile = {
   user_id: string;
@@ -119,7 +119,8 @@ export async function fetchWorkspace(): Promise<Workspace> {
     supabase.from('profiles').select('id, full_name, email, student_number, status, section_id, created_at').order('full_name'),
     supabase.from('user_roles').select('user_id, role'),
     supabase.from('invitations').select('*').order('created_at', { ascending: false }),
-    supabase.from('classes').select('*').order('code'),
+    // Classes of ended semesters are archived (see Semesters); the live pages show current classes only.
+    supabase.from('classes').select('*').is('archived_at', null).order('code'),
     supabase.from('class_students').select('*').order('full_name'),
     supabase.from('quizzes').select('*').order('created_at', { ascending: false }),
     supabase.from('quiz_attempts').select('id, quiz_id, student_id, student_email, score, total, submitted_at'),
@@ -226,7 +227,7 @@ export function studentScore(w: Workspace, classId: string, email: string) {
 
 /* ---------- Writes ---------- */
 
-export async function updateUser(id: string, patch: { full_name: string; student_number: string; status: 'active' | 'suspended' }) {
+export async function updateUser(id: string, patch: { full_name: string; student_number: string; status: 'active' | 'suspended'; suspension_reason: string }) {
   must(await supabase.from('profiles').update(patch).eq('id', id).select('id'));
 }
 

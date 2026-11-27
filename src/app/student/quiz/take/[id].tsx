@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Caption, Empty, Loading, ProgressBar, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchQuizToTake, submitQuizNow, submitQuizOp, typeLabel, type Question, type Response } from '@/lib/data';
 import { mmss } from '@/lib/format';
@@ -269,7 +269,7 @@ export default function TakeQuiz() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
   qTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   timer: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill },
@@ -285,4 +285,4 @@ const styles = StyleSheet.create({
   tf: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card },
   input: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: colors.text },
   num: { width: 24, fontWeight: '800', color: colors.textSoft, fontSize: 15 },
-});
+}));

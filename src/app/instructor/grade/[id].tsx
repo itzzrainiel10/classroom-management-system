@@ -5,7 +5,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { NumberField } from '@/components/pickers';
 import { Body, Button, Caption, Card, Empty, Field, H1, Label, Loading, Pill, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { fetchAttemptForGrading, gradeAttempt, typeLabel, type GradingQuestion, type ItemScore, type Response } from '@/lib/data';
 import { fmtDateTime, pct } from '@/lib/format';
 
@@ -132,7 +132,7 @@ export default function GradeAttempt() {
               </Text>
               {q.type !== 'essay' ? (
                 <Row style={{ gap: 4 }}>
-                  <Ionicons name={full ? 'checkmark-circle' : pts > 0 ? 'remove-circle' : 'close-circle'} size={16} color={full ? colors.primary : pts > 0 ? '#B98900' : colors.danger} />
+                  <Ionicons name={full ? 'checkmark-circle' : pts > 0 ? 'remove-circle' : 'close-circle'} size={16} color={full ? colors.primary : pts > 0 ? colors.partial : colors.danger} />
                   <Text style={styles.pts}>
                     {pts}/{max}
                   </Text>
@@ -161,9 +161,9 @@ export default function GradeAttempt() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   big: { color: colors.onPrimary, fontSize: 36, fontWeight: '900' },
   qLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.primary },
   pts: { fontWeight: '800', color: colors.text },
   answer: { backgroundColor: colors.background, borderRadius: radius.md, padding: 12, gap: 2 },
-});
+}));

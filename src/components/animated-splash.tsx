@@ -2,7 +2,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/theme';
+import { colors, themed } from '@/constants/theme';
 
 const SEAL = require('../../assets/images/splash-icon.png');
 const MIN_MS = 1600;
@@ -57,7 +57,7 @@ export function AnimatedSplash({ ready }: { ready: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', zIndex: 100 },
   seal: { width: 180, height: 180 },
   textBlock: { position: 'absolute', top: '58%', alignItems: 'center', gap: 8 },
@@ -65,4 +65,4 @@ const styles = StyleSheet.create({
   title: { color: colors.onPrimary, fontSize: 24, fontWeight: '800', textAlign: 'center', lineHeight: 30 },
   track: { width: 120, height: 4, borderRadius: 2, backgroundColor: colors.onPrimarySoft, overflow: 'hidden', marginTop: 12, opacity: 0.6 },
   bar: { width: 60, height: 4, borderRadius: 2, backgroundColor: colors.gold },
-});
+}));

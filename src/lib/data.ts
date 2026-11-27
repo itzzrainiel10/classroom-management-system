@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 /* ---------- Types ---------- */
 
 export type ClassRef = { code: string; title: string; section: string };
-export type ClassRow = ClassRef & { id: string; instructor_id: string; description: string; created_at: string };
+export type ClassRow = ClassRef & { id: string; instructor_id: string; description: string; created_at: string; subject_id?: string | null };
 export type ClassSummary = ClassRow & { students: number; quizzes: number; assignments: number; _pending?: true };
 export type Student = { id: string; class_id: string; email: string; full_name: string; created_at: string; _pending?: true };
 export type QuizStatus = 'draft' | 'published';
@@ -75,7 +75,7 @@ export type Attempt = {
 /** A file attached to an assignment (private "assignment-files" bucket, path <class>/<assignment>/<file>). */
 export type Attachment = { path: string; name: string; size: number; type: string };
 export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; attachments?: Attachment[]; class?: ClassRef | null; _pending?: true };
-export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string; class?: ClassRef | null; _pending?: true };
+export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string; author_name?: string; class?: ClassRef | null; _pending?: true };
 export type Schedule = { id: string; class_id: string; day_of_week: number; start_time: string; end_time: string; room: string; class?: ClassRef | null; _pending?: true };
 
 /* ---------- Helpers ---------- */

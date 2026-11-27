@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Caption, Card, Empty, Loading, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchQuizToTake, typeLabel } from '@/lib/data';
 import { pct } from '@/lib/format';
@@ -88,7 +88,7 @@ export default function QuizResult() {
                 <Ionicons
                   name={it.pending ? 'time-outline' : full ? 'checkmark-circle' : it.points > 0 ? 'remove-circle' : 'close-circle'}
                   size={18}
-                  color={it.pending ? colors.textSoft : full ? colors.primary : it.points > 0 ? '#B98900' : colors.danger}
+                  color={it.pending ? colors.textSoft : full ? colors.primary : it.points > 0 ? colors.partial : colors.danger}
                 />
                 <View style={{ flex: 1 }}>
                   <Body numberOfLines={1}>
@@ -122,7 +122,7 @@ export default function QuizResult() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   hero: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: 24, alignItems: 'center', gap: 10 },
   kicker: { color: colors.gold, fontWeight: '800', letterSpacing: 1.4, fontSize: 12 },
   ring: { width: 150, height: 150, borderRadius: 75, borderWidth: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
@@ -130,4 +130,4 @@ const styles = StyleSheet.create({
   ringSub: { fontSize: 12, color: colors.textSoft, fontWeight: '700' },
   title: { color: colors.onPrimary, fontSize: 24, fontWeight: '800' },
   sub: { color: colors.onPrimarySoft, fontSize: 15 },
-});
+}));

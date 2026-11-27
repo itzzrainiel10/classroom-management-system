@@ -5,7 +5,7 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Caption, Card, Field, Label } from '@/components/ui';
-import { colors, radius, shadow, text } from '@/constants/theme';
+import { colors, radius, shadow, text, themed } from '@/constants/theme';
 import { SectionPicker, useSections } from '@/components/section-picker';
 import { useAuth, type Role } from '@/lib/auth';
 
@@ -40,7 +40,6 @@ export default function SignIn() {
     if (mode === 'up' && role === 'instructor') {
       if (!employeeId.trim()) return setMessage({ text: 'Enter your employee / faculty ID.', ok: false });
       if (!department.trim()) return setMessage({ text: 'Enter your department.', ok: false });
-      if (!/^\+?[0-9][0-9 -]{6,18}$/.test(contact.trim())) return setMessage({ text: 'Enter a valid contact number (e.g. 0917 123 4567).', ok: false });
     }
     setBusy(true);
     setMessage(null);
@@ -65,7 +64,7 @@ export default function SignIn() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.topBar}>
             <Pressable onPress={() => router.back()} hitSlop={10} style={({ pressed }) => [styles.back, pressed && { opacity: 0.7 }]} accessibilityLabel="Back">
@@ -103,7 +102,6 @@ export default function SignIn() {
                 </View>
                 <Field label="Employee / Faculty ID" value={employeeId} onChangeText={setEmployeeId} placeholder="e.g. CvSU-2019-0142" autoCapitalize="characters" />
                 <Field label="Department" value={department} onChangeText={setDepartment} placeholder="e.g. Department of Information Technology" />
-                <Field label="Contact number" value={contact} onChangeText={setContact} placeholder="e.g. 0917 123 4567" keyboardType="phone-pad" autoComplete="tel" />
               </>
             ) : null}
             <Field
@@ -181,7 +179,7 @@ export default function SignIn() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: 22, gap: 22, flexGrow: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -229,4 +227,4 @@ const styles = StyleSheet.create({
   orRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.mint },
   orText: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: colors.muted },
-});
+}));

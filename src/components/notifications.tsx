@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Caption, Card, Empty, H2, Loading, OfflineNote, Row, Screen } from '@/components/ui';
-import { colors } from '@/constants/theme';
+import { colors, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchNotifications, markAllRead, type Notice } from '@/lib/data';
 import { fmtDateTime } from '@/lib/format';
@@ -18,7 +18,7 @@ const iconFor = (n: Notice) => (n.kind === 'application' ? (n.title.includes('no
 export function NoticeCard({ n }: { n: Notice }) {
   const unread = !n.read_at;
   return (
-    <Card style={[{ paddingVertical: 12 }, unread && { borderColor: colors.gold, backgroundColor: '#FFFDF3' }]}>
+    <Card style={[{ paddingVertical: 12 }, unread && { borderColor: colors.gold, backgroundColor: colors.unread }]}>
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={[styles.icon, n.title.includes('not approved') && { backgroundColor: colors.dangerSoft }]}>
           <Ionicons name={iconFor(n)} size={18} color={n.title.includes('not approved') ? colors.danger : colors.primary} />
@@ -28,7 +28,12 @@ export function NoticeCard({ n }: { n: Notice }) {
           {n.body ? <Caption style={{ color: colors.text }}>{n.body}</Caption> : null}
           <Caption>{fmtDateTime(n.created_at)}</Caption>
         </View>
-        {unread ? <View style={styles.dot} /> : null}
+        {unread ? (
+          <View style={styles.newTag} accessibilityLabel="Unread">
+            <Ionicons name="ellipse" size={8} color={colors.goldInk} />
+            <Text style={styles.newText}>New</Text>
+          </View>
+        ) : null}
       </Row>
     </Card>
   );
@@ -78,9 +83,11 @@ export function Bell({ onPress }: { onPress: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   icon: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold, marginTop: 4 },
+    newTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.goldSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+    newText: { color: colors.goldInk, fontSize: 11.5, fontWeight: '800' },
   bell: {
     width: 40,
     height: 40,
@@ -93,4 +100,4 @@ const styles = StyleSheet.create({
   },
   badge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   badgeText: { fontSize: 10, fontWeight: '800', color: colors.text },
-});
+}));

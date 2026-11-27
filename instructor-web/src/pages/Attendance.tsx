@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { toast } from '../components/toast';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, PageHeader, Tile } from '../components/ui';
 import { useData } from '../hooks/useData';
@@ -53,6 +54,7 @@ export default function Attendance() {
     });
   }, [roster.data, history.data]);
   const allRecs = history.data?.records ?? [];
+  const { shown: pageRows, paging } = usePaged(perStudent, classId);
   const overall = rate(allRecs.filter((r) => r.status === 'present').length, allRecs.length);
 
   const save = async () => {
@@ -242,33 +244,36 @@ export default function Attendance() {
         <div className="card">
           <CardHead title="By student" sub="All meetings of this class" />
           {perStudent.length ? (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th className="num">Present</th>
-                    <th className="num">Absent</th>
-                    <th className="num">Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {perStudent.map((p) => {
-                    const r = rate(p.present, p.total);
-                    return (
-                      <tr key={p.email}>
-                        <td>
-                          <b>{p.name}</b>
-                        </td>
-                        <td className="num">{p.present}</td>
-                        <td className="num">{p.absent}</td>
-                        <td className="num">{r == null ? '—' : <span className={`badge ${r >= 80 ? 'green' : r >= 60 ? 'gold' : 'red'}`}>{r}%</span>}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th className="num">Present</th>
+                      <th className="num">Absent</th>
+                      <th className="num">Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((p) => {
+                      const r = rate(p.present, p.total);
+                      return (
+                        <tr key={p.email}>
+                          <td>
+                            <b>{p.name}</b>
+                          </td>
+                          <td className="num">{p.present}</td>
+                          <td className="num">{p.absent}</td>
+                          <td className="num">{r == null ? '—' : <span className={`badge ${r >= 80 ? 'green' : r >= 60 ? 'gold' : 'red'}`}>{r}%</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pager paging={paging} noun="students" />
+            </>
           ) : (
             <Empty icon="users" title="No students" />
           )}

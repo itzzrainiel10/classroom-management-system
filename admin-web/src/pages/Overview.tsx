@@ -6,6 +6,7 @@ import { CardHead, Empty, Loading, PageHeader, Tile } from '../components/ui';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { fetchActivity, nameOf, useData, userRows, type Activity } from '../services/data';
 import { fmtClock, fmtNum, fmtTime, fmtToday, semesterRange, startOfDay } from '../services/format';
+import { fetchRenewals } from '../services/renewals';
 
 export const activityIcon = (a: Pick<Activity, 'category'>): IconName =>
   (({ assessment: 'clipboard', enrollment: 'users', class: 'book', assignment: 'edit', announcement: 'megaphone', schedule: 'calendar', user: 'user', sign_in: 'login', verification: 'shield', attendance: 'checkCircle' }) as Record<string, IconName>)[a.category] ?? 'activity';
@@ -52,13 +53,14 @@ export default function Overview() {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle={`${fmtToday()} · ${w.settings.current_semester}, AY ${w.settings.current_academic_year} · ${semesterRange(w.settings.semester_start, w.settings.semester_end)}`}
+        subtitle={`${w.settings.current_semester}, AY ${w.settings.current_academic_year} · ${semesterRange(w.settings.semester_start, w.settings.semester_end)}`}
         actions={
           <Link to="/admin/schedules" className="btn btn-primary">
             <Icon name="plus" size={16} /> Add schedule
           </Link>
         }
       />
+      <RenewalsWaiting />
 
       {pendingApps.length ? (
         <div className="note gold" style={{ alignItems: 'center' }}>
@@ -231,3 +233,24 @@ export default function Overview() {
 }
 
 export const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+/** Dashboard reminder: renewal requests waiting for the administrator. */
+function RenewalsWaiting() {
+  const { data } = useData(fetchRenewals);
+  const waiting = (data?.renewals ?? []).filter((r) => r.status === 'pending');
+  if (!waiting.length) return null;
+  const students = waiting.filter((r) => r.kind === 'student').length;
+  const instructors = waiting.length - students;
+  return (
+    <div className="note gold">
+      <Icon name="checkCircle" />
+      <div>
+        <b>Renewals waiting:</b> {[students ? `${students} student${students === 1 ? '' : 's'}` : '', instructors ? `${instructors} instructor${instructors === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ')} for{' '}
+        {data?.label ?? 'this semester'}.{' '}
+        <Link className="link" to="/admin/renewals">
+          Review renewals
+        </Link>
+      </div>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { AnnouncementCard } from '@/components/announcement-card';
 import { Body, Caption, Card, Empty, H1, H2, Label, ListCard, ListItem, Loading, OfflineNote, Pill, Screen, Segmented } from '@/components/ui';
 import { useStudentHome } from '@/hooks/use-student';
 import { fmtDate, fmtDateTime } from '@/lib/format';
@@ -73,12 +74,7 @@ export default function StudentClass() {
         </>
       ) : announcements.length ? (
         announcements.map((a) => (
-          <Card key={a.id} style={{ gap: 4 }}>
-            <Label>Class update</Label>
-            <H2>{a.title}</H2>
-            <Body>{a.message}</Body>
-            <Caption>Instructor · {fmtDate(a.created_at)}</Caption>
-          </Card>
+          <AnnouncementCard key={a.id} a={a} />
         ))
       ) : (
         <Caption>No announcements yet.</Caption>

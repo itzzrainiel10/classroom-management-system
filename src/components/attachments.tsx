@@ -3,7 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { attachmentUrl, fmtSize, type Attachment } from '@/lib/data';
 
 const iconFor = (name: string) => {
@@ -44,9 +44,9 @@ export function AttachmentList({ items }: { items: Attachment[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   list: { gap: 6 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.background },
   name: { flex: 1, fontSize: 13.5, fontWeight: '600', color: colors.text },
   size: { fontSize: 12, color: colors.muted },
-});
+}));

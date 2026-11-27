@@ -17,9 +17,11 @@ type Account = {
   /** Rejection / suspension reason from the administrator. */
   instructorReason: string;
   accountSuspended: boolean;
+  /** Administrator's reason when the whole account is suspended. */
+  accountReason: string;
   name: string;
 };
-const NONE: Account = { isAdmin: false, isInstructor: false, instructorStatus: null, instructorReason: '', accountSuspended: false, name: '' };
+const NONE: Account = { isAdmin: false, isInstructor: false, instructorStatus: null, instructorReason: '', accountSuspended: false, accountReason: '', name: '' };
 
 type AuthValue = Account & {
   status: 'loading' | 'signed-out' | 'signed-in';
@@ -27,6 +29,7 @@ type AuthValue = Account & {
   email: string;
   /** Returns an error message, or null when signed in as an approved instructor. */
   signIn: (email: string, password: string) => Promise<string | null>;
+  signInWithGoogle: () => Promise<string | null>;
   sendReset: (email: string) => Promise<string | null>;
   reload: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -38,7 +41,7 @@ async function loadAccount(s: Session): Promise<Account> {
   const [admin, teaches, profile, application] = await Promise.all([
     supabase.rpc('is_admin'),
     supabase.rpc('is_approved_instructor', { _user_id: s.user.id }),
-    supabase.from('profiles').select('full_name, status').eq('id', s.user.id).maybeSingle(),
+    supabase.from('profiles').select('full_name, status, suspension_reason').eq('id', s.user.id).maybeSingle(),
     supabase.from('instructor_profiles').select('status, rejection_reason').eq('user_id', s.user.id).maybeSingle(),
   ]);
   const accountSuspended = profile.data?.status === 'suspended';
@@ -48,13 +51,14 @@ async function loadAccount(s: Session): Promise<Account> {
     instructorStatus: (application.data?.status as InstructorStatus | undefined) ?? null,
     instructorReason: application.data?.rejection_reason ?? '',
     accountSuspended,
+    accountReason: profile.data?.suspension_reason ?? '',
     name: profile.data?.full_name || String(s.user.user_metadata?.full_name ?? '') || s.user.email || '',
   };
 }
 
 /** Why an account can't use the Instructor website, or null if it can. */
-export function instructorBlock(a: Pick<Account, 'isAdmin' | 'isInstructor' | 'instructorStatus' | 'instructorReason' | 'accountSuspended'>): string | null {
-  if (a.accountSuspended) return 'This account has been suspended. Please contact your administrator.';
+export function instructorBlock(a: Pick<Account, 'isAdmin' | 'isInstructor' | 'instructorStatus' | 'instructorReason' | 'accountSuspended' | 'accountReason'>): string | null {
+  if (a.accountSuspended) return `This account has been suspended.${a.accountReason ? ` Reason: ${a.accountReason}.` : ''} Please contact your administrator.`;
   if (a.isInstructor) return null;
   switch (a.instructorStatus) {
     case 'pending':
@@ -90,11 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'TOKEN_REFRESHED') return setSession(s);
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => alive && void apply(s), 0);
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => alive && void apply(s), 0);
     });
+    // Back on this tab: re-check the account (e.g. suspended meanwhile → the sign-in page explains why).
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void supabase.auth.getSession().then(({ data: d }) => alive && d.session && void apply(d.session));
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       alive = false;
       data.subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -113,12 +124,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return null;
     },
+    async signInWithGoogle() {
+      // Comes back to /login, which opens the dashboard for approved instructors and explains why otherwise.
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/login`, queryParams: { prompt: 'select_account' } },
+      });
+      return error?.message ?? null;
+    },
     async sendReset(email) {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/reset-password` });
       return error?.message ?? null;
     },
     async reload() {
-      await apply(session);
+      const { data } = await supabase.auth.getSession();
+      await apply(data.session);
     },
     async signOut() {
       // 'local' ends only this browser's instructor session.

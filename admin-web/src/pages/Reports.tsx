@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { PercentBars } from '../components/charts';
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { CardHead, Empty, PageHeader, Success, Tile } from '../components/ui';
 import { classLabel, classStats, fetchActivity, nameOf, useData } from '../services/data';
@@ -26,6 +27,7 @@ export default function Reports() {
   const perClass = classes.map((c) => ({ c, s: classStats(w, c.id) }));
   const expected = perClass.reduce((n, x) => n + x.s.students.length * x.s.quizzes.length, 0);
   const done_ = perClass.reduce((n, x) => n + x.s.attempts.length, 0);
+  const { shown: pageRows, paging } = usePaged(perClass);
   const completion = expected ? (done_ / expected) * 100 : null;
   const assignments = w.assignments.filter((a) => ids.has(a.class_id) && new Date(a.created_at) >= since).length;
   const activeStudents = new Set(
@@ -109,33 +111,36 @@ export default function Reports() {
         <div className="card">
           <CardHead title="Class performance summary" sub="Published quizzes and exams" />
           {perClass.length ? (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Class / section</th>
-                    <th>Instructor</th>
-                    <th className="num">Students</th>
-                    <th className="num">Avg. score</th>
-                    <th className="num">Completion</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {perClass.map(({ c, s }) => (
-                    <tr key={c.id}>
-                      <td>
-                        <b>{classLabel(c)}</b>
-                        <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{c.title}</div>
-                      </td>
-                      <td>{nameOf(w, c.instructor_id)}</td>
-                      <td className="num">{s.students.length}</td>
-                      <td className="num">{fmtPct(s.avgScore)}</td>
-                      <td className="num">{fmtPct(s.completion)}</td>
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Class / section</th>
+                      <th>Instructor</th>
+                      <th className="num">Students</th>
+                      <th className="num">Avg. score</th>
+                      <th className="num">Completion</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pageRows.map(({ c, s }) => (
+                      <tr key={c.id}>
+                        <td>
+                          <b>{classLabel(c)}</b>
+                          <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{c.title}</div>
+                        </td>
+                        <td>{nameOf(w, c.instructor_id)}</td>
+                        <td className="num">{s.students.length}</td>
+                        <td className="num">{fmtPct(s.avgScore)}</td>
+                        <td className="num">{fmtPct(s.completion)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pager paging={paging} noun="classes" />
+            </>
           ) : (
             <Empty icon="book" title="No classes yet" />
           )}

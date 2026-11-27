@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader, Caption, Card, Empty, H2, Label, Loading, OfflineNote, Row, Screen, Segmented } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
-import { ChooseSectionCard } from '@/components/section-picker';
+import { colors, radius, themed } from '@/constants/theme';
+import { RenewalCard } from '@/components/renewal-card';
 import { OfficialClassCard, ScheduleTable, SemesterEnded, TermBanner, WeekPlanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
 import { useStudentHome } from '@/hooks/use-student';
 import type { Term } from '@/lib/data';
@@ -145,7 +145,7 @@ export default function StudentSchedule() {
         <AppHeader crumb="Student" title="Schedule" subtitle={view === 'week' ? 'Your classes week by week' : 'Your classes month by month'} />
         <OfflineNote show={offline || timetable.offline} savedAt={savedAt ?? timetable.savedAt} />
         <TermBanner term={term} extra={section ? section.name : 'No section yet'} />
-        {timetable.data && !section ? <ChooseSectionCard onChosen={refresh} /> : null}
+        {timetable.data && !section ? <RenewalCard role="student" /> : null}
 
         <Segmented
           options={[
@@ -221,7 +221,7 @@ export default function StudentSchedule() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   gridRow: { flexDirection: 'row' },
   gridHead: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: colors.muted, paddingBottom: 2 },
@@ -230,4 +230,4 @@ const styles = StyleSheet.create({
   cellSel: { backgroundColor: colors.primary, borderColor: colors.primary },
   cellNum: { fontSize: 15, fontWeight: '700', color: colors.text },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
-});
+}));

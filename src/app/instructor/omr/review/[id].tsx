@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Caption, Card, H2, Label, Loading, Pill, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { fetchLayout, fetchScan, fetchSheets, finalizeScan, imageUrl, LETTERS, saveReview, STATUS_LABEL, type LayoutQuestion, type OmrScan, type OmrSheet } from '@/lib/omr';
 
 const STATUS_TEXT: Record<string, string> = { answered: 'Read', blank: 'Blank', multiple: 'Multiple marks', uncertain: 'Unclear' };
@@ -165,14 +165,14 @@ export default function OmrReview() {
               <View style={styles.opts}>
                 {Array.from({ length: q.choices }, (_, c) => (
                   <Pressable key={c} disabled={done} onPress={() => set(c)} style={[styles.opt, a === c && styles.optOn]}>
-                    <Text style={[styles.optText, a === c && { color: '#fff' }]}>{q.type === 'true_false' ? (c === 0 ? 'T' : 'F') : LETTERS[c]}</Text>
+                    <Text style={[styles.optText, a === c && { color: colors.onPrimary }]}>{q.type === 'true_false' ? (c === 0 ? 'T' : 'F') : LETTERS[c]}</Text>
                   </Pressable>
                 ))}
                 <Pressable disabled={done} onPress={() => set(-1)} style={[styles.opt, styles.blank, a === -1 && { backgroundColor: colors.textSoft, borderColor: colors.textSoft }]}>
-                  <Text style={[styles.optText, a === -1 && { color: '#fff' }]}>Blank</Text>
+                  <Text style={[styles.optText, a === -1 && { color: colors.onPrimary }]}>Blank</Text>
                 </Pressable>
               </View>
-              <Text style={[styles.st, det && (det.status === 'multiple' || det.status === 'uncertain') && { color: '#8A5A12', fontWeight: '800' }]}>
+              <Text style={[styles.st, det && (det.status === 'multiple' || det.status === 'uncertain') && { color: colors.goldInk, fontWeight: '800' }]}>
                 {det ? STATUS_TEXT[det.status] : ''}
                 {det?.status === 'answered' ? ` ${Math.round(det.confidence * 100)}%` : ''}
               </Text>
@@ -184,7 +184,7 @@ export default function OmrReview() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   sheet: { borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.line, backgroundColor: '#fff' },
   dot: { position: 'absolute', width: '3.4%', aspectRatio: 1, marginLeft: '-1.7%', marginTop: '-1.7%', borderRadius: 999, borderWidth: 2, borderColor: '#1f7a4d' },
   q: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.line },
@@ -195,4 +195,4 @@ const styles = StyleSheet.create({
   blank: { paddingHorizontal: 8 },
   optText: { fontWeight: '800', color: colors.textSoft, fontSize: 12.5 },
   st: { fontSize: 11, color: colors.textSoft, width: 74, textAlign: 'right' },
-});
+}));

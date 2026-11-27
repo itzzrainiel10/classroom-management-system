@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, Modal, PageHeader, Success, Tile } from '../components/ui';
 import { useData } from '../hooks/useData';
 import { downloadCsv, fmtDateTime, fmtNum } from '../services/format';
@@ -65,6 +66,7 @@ function ClassSelect({ classes, value, onChange }: { classes: ClassRef[]; value:
 export function InstructorQuizzes() {
   const { data, error, refresh } = useData(fetchQuizzes);
   const [del, setDel] = useState<QuizRow | null>(null);
+  const { shown: pageQuizzes, paging } = usePaged(data ?? []);
   return (
     <>
       <PageHeader
@@ -81,48 +83,51 @@ export function InstructorQuizzes() {
         {!data ? (
           <Loading />
         ) : data.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Class</th>
-                  <th className="num">Questions</th>
-                  <th>Status</th>
-                  <th>Due</th>
-                  <th className="num">Submitted</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((q) => (
-                  <tr key={q.id}>
-                    <td>
-                      <b>{q.title}</b> <span className="badge gray">{q.kind === 'exam' ? 'Exam' : 'Quiz'}</span>
-                    </td>
-                    <td>{classLabel(q.class)}</td>
-                    <td className="num">{q.questions}</td>
-                    <td>{q.status === 'published' ? <span className="badge green">Published</span> : <span className="badge gold">Draft</span>}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{q.due_at ? fmtDateTime(q.due_at) : 'No due date'}</td>
-                    <td className="num">
-                      {q.attempts.length}/{q.enrolled}
-                    </td>
-                    <td className="num" style={{ whiteSpace: 'nowrap' }}>
-                      <Link to={`/results/${q.id}`} className="btn btn-secondary btn-sm">
-                        Results
-                      </Link>{' '}
-                      <Link to={`/quizzes/${q.id}`} className="btn btn-secondary btn-sm">
-                        Edit
-                      </Link>{' '}
-                      <button className="btn btn-ghost btn-sm" onClick={() => setDel(q)} aria-label={`Delete ${q.title}`}>
-                        <Icon name="trash" size={14} />
-                      </button>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Class</th>
+                    <th className="num">Questions</th>
+                    <th>Status</th>
+                    <th>Due</th>
+                    <th className="num">Submitted</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageQuizzes.map((q) => (
+                    <tr key={q.id}>
+                      <td>
+                        <b>{q.title}</b> <span className="badge gray">{q.kind === 'exam' ? 'Exam' : 'Quiz'}</span>
+                      </td>
+                      <td>{classLabel(q.class)}</td>
+                      <td className="num">{q.questions}</td>
+                      <td>{q.status === 'published' ? <span className="badge green">Published</span> : <span className="badge gold">Draft</span>}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{q.due_at ? fmtDateTime(q.due_at) : 'No due date'}</td>
+                      <td className="num">
+                        {q.attempts.length}/{q.enrolled}
+                      </td>
+                      <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                        <Link to={`/results/${q.id}`} className="btn btn-secondary btn-sm">
+                          Results
+                        </Link>{' '}
+                        <Link to={`/quizzes/${q.id}`} className="btn btn-secondary btn-sm">
+                          Edit
+                        </Link>{' '}
+                        <button className="btn btn-ghost btn-sm" onClick={() => setDel(q)} aria-label={`Delete ${q.title}`}>
+                          <Icon name="trash" size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="quizzes & exams" />
+          </>
         ) : (
           <Empty icon="clipboard" title="No quizzes or exams yet" body="Create one for any of your classes.">
             <Link to="/quizzes/new" className="btn btn-primary">
@@ -664,6 +669,7 @@ export function InstructorResults() {
   const all = published.flatMap((q) => q.attempts);
   const avg = all.length ? Math.round(all.reduce((n, a) => n + pct(a), 0) / all.length) : null;
   const toGrade = all.filter((a) => a.needs_grading).length;
+  const { shown: pagePublished, paging } = usePaged(published);
   return (
     <>
       <PageHeader title="Monitor Results" subtitle="Scores and completion for your published quizzes and exams." />
@@ -680,47 +686,50 @@ export function InstructorResults() {
           </div>
           <div className="card">
             {published.length ? (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Assessment</th>
-                      <th>Class</th>
-                      <th className="num">Submitted</th>
-                      <th className="num">Average</th>
-                      <th className="num">Passed</th>
-                      <th className="num">To grade</th>
-                      <th className="num" aria-label="Actions" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {published.map((q) => {
-                      const avgQ = q.attempts.length ? Math.round(q.attempts.reduce((n, a) => n + pct(a), 0) / q.attempts.length) : null;
-                      const passed = q.attempts.filter((a) => pct(a) >= q.passing_score).length;
-                      const grade = q.attempts.filter((a) => a.needs_grading).length;
-                      return (
-                        <tr key={q.id} className="clickable" onClick={() => navigate(`/results/${q.id}`)}>
-                          <td>
-                            <b>{q.title}</b> <span className="badge gray">{q.kind === 'exam' ? 'Exam' : 'Quiz'}</span>
-                          </td>
-                          <td>{classLabel(q.class)}</td>
-                          <td className="num">
-                            {q.attempts.length}/{q.enrolled}
-                          </td>
-                          <td className="num">{avgQ == null ? '—' : `${avgQ}%`}</td>
-                          <td className="num">{q.attempts.length ? `${passed}/${q.attempts.length}` : '—'}</td>
-                          <td className="num">{grade ? <span className="badge gold">{grade}</span> : '—'}</td>
-                          <td className="num">
-                            <Link to={`/results/${q.id}`} className="btn btn-secondary btn-sm" onClick={(e) => e.stopPropagation()}>
-                              Open
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Assessment</th>
+                        <th>Class</th>
+                        <th className="num">Submitted</th>
+                        <th className="num">Average</th>
+                        <th className="num">Passed</th>
+                        <th className="num">To grade</th>
+                        <th className="num" aria-label="Actions" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagePublished.map((q) => {
+                        const avgQ = q.attempts.length ? Math.round(q.attempts.reduce((n, a) => n + pct(a), 0) / q.attempts.length) : null;
+                        const passed = q.attempts.filter((a) => pct(a) >= q.passing_score).length;
+                        const grade = q.attempts.filter((a) => a.needs_grading).length;
+                        return (
+                          <tr key={q.id} className="clickable" onClick={() => navigate(`/results/${q.id}`)}>
+                            <td>
+                              <b>{q.title}</b> <span className="badge gray">{q.kind === 'exam' ? 'Exam' : 'Quiz'}</span>
+                            </td>
+                            <td>{classLabel(q.class)}</td>
+                            <td className="num">
+                              {q.attempts.length}/{q.enrolled}
+                            </td>
+                            <td className="num">{avgQ == null ? '—' : `${avgQ}%`}</td>
+                            <td className="num">{q.attempts.length ? `${passed}/${q.attempts.length}` : '—'}</td>
+                            <td className="num">{grade ? <span className="badge gold">{grade}</span> : '—'}</td>
+                            <td className="num">
+                              <Link to={`/results/${q.id}`} className="btn btn-secondary btn-sm" onClick={(e) => e.stopPropagation()}>
+                                Open
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pager paging={paging} noun="assessments" />
+              </>
             ) : (
               <Empty icon="chart" title="No published assessments yet" body="Publish a quiz or exam and students’ scores appear here.">
                 <Link to="/quizzes/new" className="btn btn-primary">
@@ -742,16 +751,21 @@ export function InstructorQuizResults() {
   const roster = useData(() => (q ? fetchRoster(q.class_id) : Promise.resolve([])), [q?.class_id]);
   const [grading, setGrading] = useState<string | null>(null);
 
+  // Built before the early returns so the page hook below always runs.
+  const attempts = q?.attempts ?? [];
+  const students = roster.data ?? [];
+  const byEmail = new Map(attempts.map((a) => [a.student_email.toLowerCase(), a]));
+  const extra = attempts.filter((a) => !students.some((s) => s.email.toLowerCase() === a.student_email.toLowerCase()));
+  const rows = [
+    ...students.map((s) => ({ name: s.full_name || s.email, email: s.email, a: byEmail.get(s.email.toLowerCase()) })),
+    ...extra.map((a) => ({ name: a.student_name, email: a.student_email, a })),
+  ];
+  const { shown: pageRows, paging } = usePaged(rows, id);
+
   if (quizzes.error) return <ErrorNote message={quizzes.error} />;
   if (!quizzes.data || !roster.data) return <Loading />;
   if (!q) return <Empty icon="chart" title="Assessment not found" body="It may have been deleted." />;
 
-  const byEmail = new Map(q.attempts.map((a) => [a.student_email.toLowerCase(), a]));
-  const extra = q.attempts.filter((a) => !roster.data!.some((s) => s.email.toLowerCase() === a.student_email.toLowerCase()));
-  const rows = [
-    ...roster.data.map((s) => ({ name: s.full_name || s.email, email: s.email, a: byEmail.get(s.email.toLowerCase()) })),
-    ...extra.map((a) => ({ name: a.student_name, email: a.student_email, a })),
-  ];
   const done = q.attempts;
   const avg = done.length ? Math.round(done.reduce((n, a) => n + pct(a), 0) / done.length) : null;
   const passed = done.filter((a) => pct(a) >= q.passing_score).length;
@@ -786,43 +800,46 @@ export function InstructorQuizResults() {
       </div>
       <div className="card">
         {rows.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>Status</th>
-                  <th className="num">Score</th>
-                  <th className="num">%</th>
-                  <th>Result</th>
-                  <th>Submitted</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.email}>
-                    <td>
-                      <b>{r.name}</b>
-                      <small style={{ display: 'block', color: 'var(--text-soft)' }}>{r.email}</small>
-                    </td>
-                    <td>{r.a ? r.a.needs_grading ? <span className="badge gold">Needs grading</span> : <span className="badge green">Submitted</span> : <span className="badge gray">Not yet</span>}</td>
-                    <td className="num">{r.a ? `${r.a.score}/${r.a.total}` : '—'}</td>
-                    <td className="num">{r.a ? `${pct(r.a)}%` : '—'}</td>
-                    <td>{r.a ? pct(r.a) >= q.passing_score ? <span className="badge green">Passed</span> : <span className="badge red">Failed</span> : '—'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{r.a ? fmtDateTime(r.a.submitted_at) : '—'}</td>
-                    <td className="num">
-                      {r.a ? (
-                        <button className={`btn btn-sm ${r.a.needs_grading ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setGrading(r.a!.id)}>
-                          {r.a.needs_grading ? 'Grade' : 'View'}
-                        </button>
-                      ) : null}
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Status</th>
+                    <th className="num">Score</th>
+                    <th className="num">%</th>
+                    <th>Result</th>
+                    <th>Submitted</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRows.map((r) => (
+                    <tr key={r.email}>
+                      <td>
+                        <b>{r.name}</b>
+                        <small style={{ display: 'block', color: 'var(--text-soft)' }}>{r.email}</small>
+                      </td>
+                      <td>{r.a ? r.a.needs_grading ? <span className="badge gold">Needs grading</span> : <span className="badge green">Submitted</span> : <span className="badge gray">Not yet</span>}</td>
+                      <td className="num">{r.a ? `${r.a.score}/${r.a.total}` : '—'}</td>
+                      <td className="num">{r.a ? `${pct(r.a)}%` : '—'}</td>
+                      <td>{r.a ? pct(r.a) >= q.passing_score ? <span className="badge green">Passed</span> : <span className="badge red">Failed</span> : '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{r.a ? fmtDateTime(r.a.submitted_at) : '—'}</td>
+                      <td className="num">
+                        {r.a ? (
+                          <button className={`btn btn-sm ${r.a.needs_grading ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setGrading(r.a!.id)}>
+                            {r.a.needs_grading ? 'Grade' : 'View'}
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="students" />
+          </>
         ) : (
           <Empty icon="users" title="No students enrolled" body="Add students to this class to see their results.">
             <Link to={`/classes?class=${q.class_id}`} className="btn btn-primary">Add students</Link>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
 import { DAYS, ROOM_TYPES, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../services/data';
@@ -96,6 +97,7 @@ export default function Schedules() {
     .sort((a, b) => a.s.day_of_week - b.s.day_of_week || a.s.start_time.localeCompare(b.s.start_time));
 
   const approved = w.profiles.filter((p) => isApprovedInstructor(w, p.id));
+  const { shown: pageRows, paging } = usePaged(rows, `${semester}|${academicYear}|${instructor}|${section}|${subject}|${day}|${year}|${dept}|${needle}`);
   const ready = approved.length && w.subjects.length && w.sections.length && w.rooms.length;
   const blank = (): ScheduleInput => ({
     instructor_id: instructor !== 'all' ? instructor : approved[0]?.id ?? '',
@@ -143,7 +145,7 @@ export default function Schedules() {
             {!w.subjects.length && (!w.sections.length || !w.rooms.length) ? ', ' : ''}
             {!w.sections.length ? <Link className="link" to="/admin/sections">section</Link> : null}
             {!w.sections.length && !w.rooms.length ? ' and ' : ''}
-            {!w.rooms.length ? <Link className="link" to="/admin/settings">room</Link> : null}.
+            {!w.rooms.length ? <Link className="link" to="/admin/rooms">room</Link> : null}.
           </div>
         </div>
       ) : null}
@@ -240,56 +242,59 @@ export default function Schedules() {
         ) : view === 'section' ? (
           <BySection w={w} rows={rows} onOpen={(s) => setEdit({ ...s })} />
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Day & time</th>
-                  <th>Subject</th>
-                  <th>Section</th>
-                  <th>Instructor</th>
-                  <th>Room</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(({ s, d }) => (
-                  <tr key={s.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <b>{DAYS[s.day_of_week - 1]}</b>
-                      <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{d.time}</div>
-                    </td>
-                    <td>
-                      <b>{d.subjectCode}</b>
-                      <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{d.subjectName}</div>
-                    </td>
-                    <td>
-                      {d.section}
-                      <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>Year {d.year}</div>
-                    </td>
-                    <td>
-                      {d.instructor}
-                      <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>
-                        {d.employeeId || '—'}
-                        {d.department ? ` · ${d.department}` : ''}
-                      </div>
-                    </td>
-                    <td>{d.room}</td>
-                    <td className="num">
-                      <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setEdit({ ...s })}>
-                          Edit
-                        </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label="Delete schedule">
-                          <Icon name="trash" size={14} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Day & time</th>
+                    <th>Subject</th>
+                    <th>Section</th>
+                    <th>Instructor</th>
+                    <th>Room</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRows.map(({ s, d }) => (
+                    <tr key={s.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <b>{DAYS[s.day_of_week - 1]}</b>
+                        <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{d.time}</div>
+                      </td>
+                      <td>
+                        <b>{d.subjectCode}</b>
+                        <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{d.subjectName}</div>
+                      </td>
+                      <td>
+                        {d.section}
+                        <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>Year {d.year}</div>
+                      </td>
+                      <td>
+                        {d.instructor}
+                        <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>
+                          {d.employeeId || '—'}
+                          {d.department ? ` · ${d.department}` : ''}
+                        </div>
+                      </td>
+                      <td>{d.room}</td>
+                      <td className="num">
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit({ ...s })}>
+                            Edit
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label="Delete schedule">
+                            <Icon name="trash" size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="classes" />
+          </>
         )}
       </div>
 
@@ -372,7 +377,7 @@ function BySection({ w, rows, onOpen }: { w: Workspace; rows: { s: OfficialSched
                     <tr key={s.id} className="clickable" onClick={() => onOpen(s)}>
                       <td>
                         <b>{d.subjectCode}</b>
-                        <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{d.subjectName}</div>
+                        <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{d.subjectName}</div>
                       </td>
                       <td>{d.instructor}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>

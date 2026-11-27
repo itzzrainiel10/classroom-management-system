@@ -6,6 +6,7 @@ import { fetchActivity, fetchWorkspace, useData, type Workspace } from '../servi
 import { fmtDateTime } from '../services/format';
 import { Icon, type IconName } from '../components/icons';
 import { Avatar, Confirm, ErrorNote, Loading } from '../components/ui';
+import { A11yMenuItem } from '../components/a11y';
 
 type WorkspaceCtx = { w: Workspace; refresh: () => Promise<void> };
 const Ctx = createContext<WorkspaceCtx | null>(null);
@@ -21,16 +22,17 @@ type NavItem = { to: string; label: string; icon: IconName; group: string; /** o
 const NAV: NavItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'home', group: '' },
   { to: '/admin/users', label: 'Users', icon: 'users', group: 'People' },
-  { to: '/admin/instructor-verification', label: 'Instructor applications', icon: 'shield', group: 'People' },
+  { to: '/admin/instructor-verification', label: 'Applications & Renewals', icon: 'shield', group: 'People', also: ['/admin/renewals'] },
   { to: '/admin/instructors', label: 'Instructors', icon: 'school', group: 'People' },
   { to: '/admin/students', label: 'Students', icon: 'user', group: 'People' },
   { to: '/admin/subjects', label: 'Subjects', icon: 'book', group: 'Academics' },
   { to: '/admin/sections', label: 'Sections', icon: 'users', group: 'Academics' },
+  { to: '/admin/rooms', label: 'Rooms', icon: 'home', group: 'Academics' },
   { to: '/admin/schedules', label: 'Schedules', icon: 'calendar', group: 'Academics' },
   { to: '/admin/classes', label: 'Classes', icon: 'edit', group: 'Academics' },
   { to: '/admin/reports', label: 'Reports', icon: 'chart', group: 'Reports' },
   { to: '/admin/activity', label: 'Activity log', icon: 'activity', group: 'Reports' },
-  { to: '/admin/settings', label: 'Settings', icon: 'clock', group: 'System' },
+  { to: '/admin/semesters', label: 'Semesters', icon: 'calendar', group: 'System' },
 ];
 
 export function AdminLayout() {
@@ -223,25 +225,39 @@ export function AdminLayout() {
                 <Icon name="chevronDown" size={14} />
               </button>
               {menu === 'profile' ? (
-                <div className="dropdown" role="menu">
-                  <div className="dropdown-head">
-                    <b>{name || 'Administrator'}</b>
-                    <small>{email}</small>
+                <div className="dropdown pm" role="menu">
+                  <div className="pm-head">
+                    <Avatar name={name || 'Admin'} />
+                    <div className="pm-who">
+                      <b>{name || 'Administrator'}</b>
+                      <small>{email}</small>
+                      <span className="pm-role">Administrator</span>
+                    </div>
                   </div>
-                  <Link to="/admin/settings" role="menuitem">
-                    <Icon name="clock" size={16} /> System Settings
-                  </Link>
-                  <Link to="/admin/activity" role="menuitem">
-                    <Icon name="activity" size={16} /> Activity log
-                  </Link>
-                  <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMenu(null);
-                    setAskSignOut(true);
-                  }}>
-                    <Icon name="logout" size={16} /> Sign out
-                  </button>
+                  <div className="pm-group">
+                    <span className="pm-label">Preferences</span>
+                    <A11yMenuItem />
+                  </div>
+                  <div className="pm-group">
+                    <span className="pm-label">Administration</span>
+                    <Link to="/admin/semesters" role="menuitem">
+                      <Icon name="calendar" size={16} /> Semesters
+                    </Link>
+                    <Link to="/admin/activity" role="menuitem">
+                      <Icon name="activity" size={16} /> Activity log
+                    </Link>
+                  </div>
+                  <div className="pm-foot">
+                    <button
+                      className="pm-signout"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenu(null);
+                        setAskSignOut(true);
+                      }}>
+                      <Icon name="logout" size={16} /> Sign out
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { toast } from '../components/toast';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, Modal, PageHeader, Tile } from '../components/ui';
 import { useData } from '../hooks/useData';
@@ -284,7 +285,7 @@ function UploadTab({ exam, onDone, openResults }: { exam: OmrExam; onDone: () =>
         {err ? <ErrorNote message={err} /> : null}
         {queue.length ? (
           <>
-            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text-soft)', fontSize: 13 }}>
+            <div className="row" style={{ justifyContent: 'space-between', color: 'var(--text-soft)', fontSize: 'calc(13px * var(--text-scale))' }}>
               <span>
                 {queue.length} page(s) · {counts.ready} waiting · {counts.done} processed{counts.error ? ` · ${counts.error} need attention` : ''}
               </span>
@@ -339,6 +340,7 @@ function ResultsTab({ layout, sheets, scans, loading, refresh }: { layout: Layou
     filter === 'all' ? true : filter === 'review' ? s.status === 'needs_review' || s.status === 'ready' : filter === 'finalized' ? s.status === 'finalized' : s.status === 'failed' || s.status === 'duplicate',
   );
   const notScanned = sheets.filter((sh) => !scans.some((s) => s.sheet_id === sh.id && s.status !== 'failed' && s.status !== 'duplicate'));
+  const { shown: pageRows, paging } = usePaged(rows, filter);
 
   return (
     <div className="card">
@@ -367,59 +369,62 @@ function ResultsTab({ layout, sheets, scans, loading, refresh }: { layout: Layou
           <Loading />
         </div>
       ) : rows.length ? (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th className="num">Answers read</th>
-                <th className="num">Confidence</th>
-                <th className="num">Score</th>
-                <th>Scanned</th>
-                <th className="num" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((s) => {
-                const sh = sheetOf(s.sheet_id);
-                const st = STATUS_LABEL[s.status];
-                const problems = s.detected.filter((d) => d.status === 'multiple' || d.status === 'uncertain').length;
-                const unresolved = s.answers.filter((a) => a === null).length;
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      <b>{sh ? sh.student_name || sh.student_email : <span style={{ color: 'var(--danger)' }}>Unknown student</span>}</b>
-                      <small style={{ display: 'block', color: 'var(--text-soft)' }}>{sh?.student_email ?? s.original_name}</small>
-                    </td>
-                    <td>{s.source === 'mobile_camera' ? 'Phone camera' : 'Scanner'}</td>
-                    <td>
-                      <span className={`badge ${st.tone}`}>{st.label}</span>
-                      {s.status === 'failed' || s.status === 'duplicate' ? <small style={{ display: 'block', color: 'var(--text-soft)', maxWidth: 260 }}>{s.message}</small> : null}
-                    </td>
-                    <td className="num">{s.detected.length ? `${s.detected.length - problems}/${s.detected.length}${unresolved ? ` · ${unresolved} to check` : ''}` : '—'}</td>
-                    <td className="num">{s.confidence == null ? '—' : `${Math.round(s.confidence * 100)}%`}</td>
-                    <td className="num">{s.status === 'finalized' ? `${s.score}/${s.total}` : '—'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(s.created_at)}</td>
-                    <td className="num" style={{ whiteSpace: 'nowrap' }}>
-                      {s.status === 'needs_review' || s.status === 'ready' || s.status === 'finalized' ? (
-                        <button className={`btn btn-sm ${s.status === 'finalized' ? 'btn-secondary' : 'btn-primary'}`} onClick={() => setOpen(s)}>
-                          {s.status === 'finalized' ? 'View' : 'Review'}
-                        </button>
-                      ) : null}
-                      {s.status !== 'finalized' ? (
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label="Delete scan">
-                          <Icon name="trash" size={14} />
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th className="num">Answers read</th>
+                  <th className="num">Confidence</th>
+                  <th className="num">Score</th>
+                  <th>Scanned</th>
+                  <th className="num" aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((s) => {
+                  const sh = sheetOf(s.sheet_id);
+                  const st = STATUS_LABEL[s.status];
+                  const problems = s.detected.filter((d) => d.status === 'multiple' || d.status === 'uncertain').length;
+                  const unresolved = s.answers.filter((a) => a === null).length;
+                  return (
+                    <tr key={s.id}>
+                      <td>
+                        <b>{sh ? sh.student_name || sh.student_email : <span style={{ color: 'var(--danger)' }}>Unknown student</span>}</b>
+                        <small style={{ display: 'block', color: 'var(--text-soft)' }}>{sh?.student_email ?? s.original_name}</small>
+                      </td>
+                      <td>{s.source === 'mobile_camera' ? 'Phone camera' : 'Scanner'}</td>
+                      <td>
+                        <span className={`badge ${st.tone}`}>{st.label}</span>
+                        {s.status === 'failed' || s.status === 'duplicate' ? <small style={{ display: 'block', color: 'var(--text-soft)', maxWidth: 260 }}>{s.message}</small> : null}
+                      </td>
+                      <td className="num">{s.detected.length ? `${s.detected.length - problems}/${s.detected.length}${unresolved ? ` · ${unresolved} to check` : ''}` : '—'}</td>
+                      <td className="num">{s.confidence == null ? '—' : `${Math.round(s.confidence * 100)}%`}</td>
+                      <td className="num">{s.status === 'finalized' ? `${s.score}/${s.total}` : '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(s.created_at)}</td>
+                      <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                        {s.status === 'needs_review' || s.status === 'ready' || s.status === 'finalized' ? (
+                          <button className={`btn btn-sm ${s.status === 'finalized' ? 'btn-secondary' : 'btn-primary'}`} onClick={() => setOpen(s)}>
+                            {s.status === 'finalized' ? 'View' : 'Review'}
+                          </button>
+                        ) : null}
+                        {s.status !== 'finalized' ? (
+                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label="Delete scan">
+                            <Icon name="trash" size={14} />
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Pager paging={paging} noun="scans" />
+        </>
       ) : (
         <Empty icon="clipboard" title="No scans here yet" body="Upload scanner files, or scan with the phone camera in the mobile app." />
       )}
@@ -583,12 +588,12 @@ function ReviewModal({ scan, layout, sheets, onClose, onChanged }: { scan: Scan;
             </select>
           </Field>
           {scan.issues.filter((i) => !i.blocking).map((i) => (
-            <div key={i.code} className="note gold" style={{ fontSize: 12.5 }}>
+            <div key={i.code} className="note gold" style={{ fontSize: 'calc(12.5px * var(--text-scale))' }}>
               <Icon name="alert" />
               <div>{i.message}</div>
             </div>
           ))}
-          <div className="row" style={{ justifyContent: 'space-between', fontSize: 13 }}>
+          <div className="row" style={{ justifyContent: 'space-between', fontSize: 'calc(13px * var(--text-scale))' }}>
             <span>
               <b>{layout.length - unresolved}</b>/{layout.length} decided
             </span>

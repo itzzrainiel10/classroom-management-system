@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person } from '../components/ui';
 import { deleteSection, rolesOf, saveSection, setStudentSection, type Section } from '../services/data';
@@ -13,6 +14,7 @@ export default function Sections() {
   const [year, setYear] = useState('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const rows = w.sections.filter((s) => year === 'all' || String(s.year_level) === year);
+  const { shown: pageRows, paging } = usePaged(rows, year);
   const students = (id: string) => w.profiles.filter((p) => p.section_id === id);
   const classes = (id: string) => w.schedules.filter((x) => x.section_id === id && x.semester === w.settings.current_semester && x.academic_year === w.settings.current_academic_year);
   const open = w.sections.find((s) => s.id === openId);
@@ -40,51 +42,54 @@ export default function Sections() {
       </div>
       <div className="card">
         {rows.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Section</th>
-                  <th>Program</th>
-                  <th>Year level</th>
-                  <th className="num">Students</th>
-                  <th className="num">Classes this term</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <b>{s.name}</b>
-                      {s.department ? <div style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>{s.department}</div> : null}
-                    </td>
-                    <td>{s.program || '—'}</td>
-                    <td>Year {s.year_level}</td>
-                    <td className="num">{students(s.id).length}</td>
-                    <td className="num">
-                      <Link className="link" to={`/admin/schedules?section=${s.id}`}>
-                        {classes(s.id).length}
-                      </Link>
-                    </td>
-                    <td className="num">
-                      <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                        <button className="btn btn-primary btn-sm" onClick={() => setOpenId(s.id)}>
-                          Students
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.name}`}>
-                          <Icon name="trash" size={14} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Section</th>
+                    <th>Program</th>
+                    <th>Year level</th>
+                    <th className="num">Students</th>
+                    <th className="num">Classes this term</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRows.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        <b>{s.name}</b>
+                        {s.department ? <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{s.department}</div> : null}
+                      </td>
+                      <td>{s.program || '—'}</td>
+                      <td>Year {s.year_level}</td>
+                      <td className="num">{students(s.id).length}</td>
+                      <td className="num">
+                        <Link className="link" to={`/admin/schedules?section=${s.id}`}>
+                          {classes(s.id).length}
+                        </Link>
+                      </td>
+                      <td className="num">
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                          <button className="btn btn-primary btn-sm" onClick={() => setOpenId(s.id)}>
+                            Students
+                          </button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
+                            Edit
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.name}`}>
+                            <Icon name="trash" size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="sections" />
+          </>
         ) : (
           <Empty icon="school" title="No sections yet" body="Add sections like “BSIT 3-1”, then assign students and schedule their subjects." />
         )}

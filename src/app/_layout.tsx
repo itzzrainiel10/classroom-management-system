@@ -4,8 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 
 import { AnimatedSplash } from '@/components/animated-splash';
-import { colors } from '@/constants/theme';
+import { headerOptions, screenLayout } from '@/components/nav';
+import { colors, isDark, useThemeVersion } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { LiveUpdates } from '@/lib/live';
 import { OutboxProvider } from '@/lib/outbox';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,6 +16,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OutboxProvider>
+        <LiveUpdates />
         <Root />
       </OutboxProvider>
     </AuthProvider>
@@ -22,10 +25,11 @@ export default function RootLayout() {
 
 function Root() {
   const { status } = useAuth();
+  useThemeVersion(); // re-draw with the new colors after a theme change
   const ready = status !== 'loading';
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      <StatusBar style={ready ? 'dark' : 'light'} />
+      <StatusBar style={ready && !isDark() ? 'dark' : 'light'} />
       {ready ? <RootStack /> : null}
       <AnimatedSplash ready={ready} />
     </View>
@@ -39,7 +43,7 @@ function RootStack() {
   const applicant = signedIn && !role && !!application;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} screenLayout={screenLayout}>
       <Stack.Screen name="index" />
       <Stack.Screen name="auth-callback" />
       <Stack.Protected guard={!signedIn}>
@@ -49,6 +53,10 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={applicant}>
         <Stack.Screen name="application" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="settings" options={() => ({ ...headerOptions(), headerShown: true, title: 'Settings' })} />
+        <Stack.Screen name="change-password" options={() => ({ ...headerOptions(), headerShown: true, title: 'Reset password' })} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && role === 'instructor'}>
         <Stack.Screen name="instructor" />

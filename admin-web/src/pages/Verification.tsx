@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person, Success } from '../components/ui';
 import { fetchVerificationHistory, nameOf, proofUrl, reviewInstructor, setInstructorSuspension, useData, type AppStatus, type InstructorProfile } from '../services/data';
@@ -17,7 +18,7 @@ export const AppBadge = ({ status }: { status: AppStatus }) => (
   <span className={`badge ${status === 'approved' ? 'green' : status === 'pending' ? 'gold' : status === 'suspended' ? 'gray' : 'red'}`}>{status[0].toUpperCase() + status.slice(1)}</span>
 );
 
-export default function Verification() {
+export default function Verification({ embedded = false }: { embedded?: boolean } = {}) {
   const { w } = useWorkspace();
   const [tab, setTab] = useState<AppStatus>('pending');
   const [q, setQ] = useState('');
@@ -28,18 +29,23 @@ export default function Verification() {
     .map((a) => ({ a, p: w.profiles.find((p) => p.id === a.user_id) }))
     .filter(({ a, p }) => !needle || [p?.full_name, p?.email, a.employee_id, a.department].some((x) => (x ?? '').toLowerCase().includes(needle)));
   const count = (s: AppStatus) => w.instructorProfiles.filter((a) => a.status === s).length;
+  const { shown: pageRows, paging } = usePaged(rows, `${tab}|${needle}`);
   const current = w.instructorProfiles.find((a) => a.user_id === open);
 
   return (
     <>
-      <PageHeader title="Instructor applications" subtitle="Confirm that each instructor applicant is a legitimate CvSU faculty member before they can teach." />
+      {embedded ? (
+        <p className="sem-lead">Confirm that each instructor applicant is a legitimate CvSU faculty member before they can teach.</p>
+      ) : (
+        <PageHeader title="Instructor records" subtitle="Application history, and suspending or reactivating approved instructors. New applications are approved in Applications & Renewals." />
+      )}
       <div className="card">
         <div className="card-head" style={{ flexWrap: 'wrap' }}>
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
               <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)} role="tab" aria-selected={tab === t.id}>
                 {t.label}
-                <span className="n">{count(t.id)}</span>
+                {count(t.id) > 0 ? <span className="n">{count(t.id)}</span> : null}
               </button>
             ))}
           </div>
@@ -49,41 +55,44 @@ export default function Verification() {
           </div>
         </div>
         {rows.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Applicant</th>
-                  <th>Employee / Faculty ID</th>
-                  <th>Department</th>
-                  <th>{tab === 'pending' ? 'Submitted' : 'Decided'}</th>
-                  <th>Proof</th>
-                  <th className="num" aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(({ a, p }) => (
-                  <tr key={a.user_id}>
-                    <td>
-                      <Person name={p?.full_name || p?.email || 'Unknown'} sub={p?.email} />
-                    </td>
-                    <td>{a.employee_id || <span style={{ color: 'var(--danger)' }}>Missing</span>}</td>
-                    <td>{a.department || '—'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {tab === 'pending' ? fmtDateTime(a.submitted_at) : `${fmtDateTime(a.reviewed_at)}`}
-                      {tab !== 'pending' && a.reviewed_by ? <div style={{ color: 'var(--text-soft)', fontSize: 12 }}>by {nameOf(w, a.reviewed_by)}</div> : null}
-                    </td>
-                    <td>{a.proof_path ? <span className="badge green">Attached</span> : <span className="badge gray">None</span>}</td>
-                    <td className="num">
-                      <button className={`btn btn-sm ${tab === 'pending' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setOpen(a.user_id)}>
-                        {tab === 'pending' ? 'Review' : 'View'}
-                      </button>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Employee / Faculty ID</th>
+                    <th>Department</th>
+                    <th>{tab === 'pending' ? 'Submitted' : 'Decided'}</th>
+                    <th>Proof</th>
+                    <th className="num" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageRows.map(({ a, p }) => (
+                    <tr key={a.user_id}>
+                      <td>
+                        <Person name={p?.full_name || p?.email || 'Unknown'} sub={p?.email} />
+                      </td>
+                      <td>{a.employee_id || <span style={{ color: 'var(--danger)' }}>Missing</span>}</td>
+                      <td>{a.department || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {tab === 'pending' ? fmtDateTime(a.submitted_at) : `${fmtDateTime(a.reviewed_at)}`}
+                        {tab !== 'pending' && a.reviewed_by ? <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12px * var(--text-scale))' }}>by {nameOf(w, a.reviewed_by)}</div> : null}
+                      </td>
+                      <td>{a.proof_path ? <span className="badge green">Attached</span> : <span className="badge gray">None</span>}</td>
+                      <td className="num">
+                        <button className={`btn btn-sm ${tab === 'pending' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setOpen(a.user_id)}>
+                          {tab === 'pending' ? 'Review' : 'View'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager paging={paging} noun="applications" />
+          </>
         ) : (
           <Empty
             icon={tab === 'pending' ? 'checkCircle' : 'users'}
@@ -209,7 +218,7 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
       }>
       <div className="row" style={{ gap: 8 }}>
         <AppBadge status={app.status} />
-        <span style={{ color: 'var(--text-soft)', fontSize: 12.5 }}>Submitted {fmtDateTime(app.submitted_at)}</span>
+        <span style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>Submitted {fmtDateTime(app.submitted_at)}</span>
       </div>
       <div className="detail-grid">
         <div>
@@ -263,9 +272,9 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
       )}
       {history.data?.length ? (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: 'var(--muted)', marginBottom: 6 }}>DECISION HISTORY</div>
+          <div style={{ fontSize: 'calc(11px * var(--text-scale))', fontWeight: 800, letterSpacing: 1, color: 'var(--muted)', marginBottom: 6 }}>DECISION HISTORY</div>
           {history.data.map((h, i) => (
-            <div key={i} style={{ fontSize: 13, padding: '6px 0', borderTop: i ? '1px solid var(--line)' : 0 }}>
+            <div key={i} style={{ fontSize: 'calc(13px * var(--text-scale))', padding: '6px 0', borderTop: i ? '1px solid var(--line)' : 0 }}>
               <b style={{ textTransform: 'capitalize' }}>{h.decision}</b> by {nameOf(w, h.decided_by)} · {fmtDateTime(h.decided_at)}
               {h.reason ? <div style={{ color: 'var(--text-soft)' }}>{h.reason}</div> : null}
             </div>

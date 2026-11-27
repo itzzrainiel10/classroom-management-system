@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
 import { cancelInvitation, classLabel, inviteUser, userRows } from '../services/data';
 import { fmtNum } from '../services/format';
 
-const PAGE = 10;
 type Tab = 'all' | 'instructor' | 'student';
 
 /** All users, or (Student Management) only one role when `only` is set. */
@@ -18,12 +18,10 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
   const [tab, setTab] = useState<Tab>(only ?? 'all');
   useEffect(() => setTab(only ?? 'all'), [only]);
   const [q, setQ] = useState(params.get('q') ?? '');
-  const [page, setPage] = useState(0);
   const [inviting, setInviting] = useState(false);
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => setQ(params.get('q') ?? ''), [params]);
-  useEffect(() => setPage(0), [tab, q]);
 
   const all = useMemo(() => userRows(w), [w]);
   const counts = { all: all.length, instructor: all.filter((u) => u.role === 'instructor').length, student: all.filter((u) => u.role === 'student').length };
@@ -32,7 +30,7 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
     .filter((u) => tab === 'all' || u.role === tab)
     .filter((u) => !needle || u.name.toLowerCase().includes(needle) || u.email.includes(needle) || u.student_number.toLowerCase().includes(needle))
     .sort((a, b) => a.name.localeCompare(b.name));
-  const shown = rows.slice(page * PAGE, page * PAGE + PAGE);
+  const { shown, paging } = usePaged(rows, `${tab}|${q}`);
 
   return (
     <>
@@ -136,19 +134,7 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
         ) : (
           <Empty icon="users" title={needle ? 'No matching users' : 'No users yet'} body={needle ? 'Try a different name, email or student number.' : 'Accounts appear here when people sign up in the mobile app.'} />
         )}
-        <div className="table-foot">
-          <span>
-            Showing {rows.length ? page * PAGE + 1 : 0}–{Math.min(rows.length, page * PAGE + PAGE)} of {fmtNum(rows.length)} users
-          </span>
-          <div className="row">
-            <button className="btn btn-secondary btn-sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              Previous
-            </button>
-            <button className="btn btn-secondary btn-sm" disabled={(page + 1) * PAGE >= rows.length} onClick={() => setPage((p) => p + 1)}>
-              Next
-            </button>
-          </div>
-        </div>
+        <Pager paging={paging} noun="users" />
       </div>
 
       {inviting ? (

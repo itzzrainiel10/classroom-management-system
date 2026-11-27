@@ -2,19 +2,20 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { onLiveChange } from '@/lib/live';
 import { cacheGet, cacheSet } from '@/lib/offline';
 import { useOutbox } from '@/lib/outbox';
 
 type State<T> = { data: T | undefined; loading: boolean; offline: boolean; savedAt: string | null; error: string | null };
 
 /** How often an open screen re-checks the server in the background. */
-const AUTO_REFRESH_MS = 30_000;
+const AUTO_REFRESH_MS = 15_000;
 
 /**
  * Server data with an offline copy: shows the phone's saved copy at once, then refreshes from
  * the server. `merge` adds changes still waiting to upload.
  *
- * Auto refresh: while the screen is open it quietly re-checks the server every 30 s and whenever the
+ * Auto refresh: while the screen is open it refreshes as soon as the server reports a change, re-checks every 15 s, and whenever the
  * app comes back to the foreground. Quiet refreshes don't show loading, and if nothing changed the
  * previous object is kept, so forms on the screen are not reset.
  */
@@ -88,10 +89,13 @@ export function useRemote<T>(key: string, fetcher: () => Promise<T>, merge?: (da
   useFocusEffect(
     useCallback(() => {
       load();
-      // While this screen is focused: re-check every 30 s and when the app returns to the foreground.
+      // While this screen is focused: refresh at once when the server reports a change (live updates),
+      // every 15 s as a backup, and when the app returns to the foreground.
+      const off = onLiveChange(() => void quiet());
       const t = setInterval(() => void quiet(), AUTO_REFRESH_MS);
       const sub = AppState.addEventListener('change', (s) => s === 'active' && void quiet());
       return () => {
+        off();
         clearInterval(t);
         sub.remove();
       };

@@ -1,7 +1,8 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Caption, Card, Empty, H2, Label, Loading, OfflineNote, ProgressBar, Row, Screen } from '@/components/ui';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchMyAttendance, type MyAttendanceRow } from '@/lib/data';
 
@@ -55,7 +56,8 @@ export default function MyAttendance() {
               </Row>
               <View style={styles.chips}>
                 {rows.slice(0, 12).map((r) => (
-                  <View key={r.session_date} style={[styles.chip, r.status === 'absent' && styles.chipAbsent]}>
+                  <View key={r.session_date} style={[styles.chip, r.status === 'absent' && styles.chipAbsent, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                    <Ionicons name={r.status === 'present' ? 'checkmark-circle' : 'close-circle'} size={13} color={r.status === 'present' ? colors.primary : colors.danger} />
                     <Text style={[styles.chipText, r.status === 'absent' && { color: colors.danger }]}>
                       {nice(r.session_date)} · {r.status === 'present' ? 'Present' : 'Absent'}
                     </Text>
@@ -70,11 +72,11 @@ export default function MyAttendance() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   big: { fontSize: 22, fontWeight: '800', color: colors.primary },
   rate: { fontSize: 20, fontWeight: '800', color: colors.primary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
   chipAbsent: { backgroundColor: colors.dangerSoft },
   chipText: { fontSize: 11.5, fontWeight: '700', color: colors.primary },
-});
+}));

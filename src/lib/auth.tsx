@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { AppState, Platform } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
 
 import { setCacheScope } from './offline';
 import { supabase } from './supabase';
@@ -83,7 +83,22 @@ const BLOCKED = {
 export type Application = { status: 'pending' | 'rejected'; reason: string };
 export type InstructorDetails = { employee_id: string; department: string; contact_number: string; section_id?: string | null };
 
-type Account = { role: Role | null; name: string; application: Application | null; blocked?: keyof typeof BLOCKED };
+type Account = { role: Role | null; name: string; application: Application | null; blocked?: keyof typeof BLOCKED; /** Admin's reason (suspensions). */ reason?: string };
+
+/** The message a blocked person sees, with the administrator's reason when there is one. */
+function blockedMessage(a: Account) {
+  if (!a.blocked) return '';
+  const why = a.reason?.trim();
+  if (a.blocked === 'suspended') return `This account has been suspended.${why ? ` Reason: ${why}.` : ''} Please contact your administrator.`;
+  if (a.blocked === 'instructorSuspended') return `Your instructor access has been suspended.${why ? ` Reason: ${why}.` : ''} Please contact your administrator.`;
+  return BLOCKED[a.blocked];
+}
+
+/** Signed out while using the app (e.g. suspended meanwhile): say why instead of silently leaving. */
+function tellBlocked(a: Account) {
+  const title = a.blocked === 'suspended' ? 'Account suspended' : a.blocked === 'instructorSuspended' ? 'Instructor access suspended' : 'Signed out';
+  Alert.alert(title, blockedMessage(a));
+}
 const appKey = (uid: string) => `cms.application.${uid}`;
 
 /**
@@ -102,10 +117,10 @@ async function loadAccount(session: Session): Promise<Account> {
   try {
     const [roles, profile] = await Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', uid),
-      supabase.from('profiles').select('full_name, status').eq('id', uid).maybeSingle(),
+      supabase.from('profiles').select('full_name, status, suspension_reason').eq('id', uid).maybeSingle(),
     ]);
     if (roles.error || profile.error) throw new Error('offline');
-    if (profile.data?.status === 'suspended') return { role: null, name, application: null, blocked: 'suspended' };
+    if (profile.data?.status === 'suspended') return { role: null, name, application: null, blocked: 'suspended', reason: profile.data.suspension_reason ?? '' };
     if (profile.data?.full_name) {
       name = profile.data.full_name;
       localStorage.setItem(nameKey(uid), name);
@@ -121,8 +136,8 @@ async function loadAccount(session: Session): Promise<Account> {
     let application: Application | null = null;
     if (role === 'instructor') {
       // Suspended by an administrator: same account, but no instructor features (also enforced by the database).
-      const ip = await supabase.from('instructor_profiles').select('status').eq('user_id', uid).maybeSingle();
-      if (ip.data?.status === 'suspended') return { role: null, name, application: null, blocked: 'instructorSuspended' };
+      const ip = await supabase.from('instructor_profiles').select('status, rejection_reason').eq('user_id', uid).maybeSingle();
+      if (ip.data?.status === 'suspended') return { role: null, name, application: null, blocked: 'instructorSuspended', reason: ip.data.rejection_reason ?? '' };
     }
     if (role !== 'instructor') {
       const app = await supabase.from('instructor_profiles').select('status, rejection_reason').eq('user_id', uid).maybeSingle();
@@ -173,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!alive) return;
         if (a.blocked) {
           await client.auth.signOut();
+          tellBlocked(a);
           return;
         }
         applyAccount(a);
@@ -191,8 +207,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') apply(s);
     });
     const appState = AppState.addEventListener('change', (state) => {
-      if (state === 'active') client.auth.startAutoRefresh();
-      else client.auth.stopAutoRefresh();
+      if (state === 'active') {
+        client.auth.startAutoRefresh();
+        const s = sessionRef.current;
+        if (s) {
+          void loadAccount(s).then(async (a) => {
+            if (alive && a.blocked) {
+              await client.auth.signOut();
+              tellBlocked(a);
+            }
+          });
+        }
+      } else client.auth.stopAutoRefresh();
     });
     return () => {
       alive = false;
@@ -208,7 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return null;
     if (a.blocked) {
       await supabase.auth.signOut();
-      return BLOCKED[a.blocked];
+      return blockedMessage(a);
     }
     if (a.application && expectedRole === 'student') {
       await supabase.auth.signOut();
@@ -235,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const a = await loadAccount(s);
       if (a.blocked) {
         await supabase.auth.signOut();
+        tellBlocked(a);
         return;
       }
       applyAccount(a);
