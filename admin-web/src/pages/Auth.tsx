@@ -40,7 +40,7 @@ function Notice({ msg }: { msg: { text: string; ok: boolean } | null }) {
 
 /** /admin/login — administrators only. */
 export function SignIn() {
-  const { status, isAdmin, signIn, signInWithGoogle, sendReset, signOut } = useAuth();
+  const { status, isAdmin, signIn, signInWithGoogle, sendReset, rejectNonAdmin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,10 +54,10 @@ export function SignIn() {
     if (isAdmin) navigate('/admin/dashboard', { replace: true });
     else {
       // e.g. came back from Google with an account that isn't an administrator
-      void signOut();
+      void rejectNonAdmin();
       setMsg({ text: NOT_ADMIN, ok: false });
     }
-  }, [status, isAdmin, navigate, signOut, mode]);
+  }, [status, isAdmin, navigate, rejectNonAdmin, mode]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

@@ -4,7 +4,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from './supabase';
 
 /** Address of the separate Admin website (shown to administrators who try to sign in here). */
-export const ADMIN_SITE = (import.meta.env.VITE_ADMIN_SITE_URL as string | undefined) ?? 'http://localhost:5173';
+export const ADMIN_SITE =
+  (import.meta.env.VITE_ADMIN_SITE_URL as string | undefined) ??
+  (window.location.hostname.endsWith('vercel.app') ? 'https://cvsu-cms-admin.vercel.app' : 'http://localhost:5173');
 
 /** Instructor application state, read from the database (never from the browser). */
 export type InstructorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
@@ -37,7 +39,20 @@ type AuthValue = Account & {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+/**
+ * A brand-new Google account on this website has no role yet: it becomes an instructor applicant
+ * (pending), so an administrator sees it in Applications & Renewals. Students and admins are untouched.
+ */
 async function loadAccount(s: Session): Promise<Account> {
+  const a = await readAccount(s);
+  if (!a.isAdmin && !a.isInstructor && a.instructorStatus === null && s.user.app_metadata?.provider === 'google') {
+    const claimed = await supabase.rpc('claim_role', { _role: 'instructor' });
+    if (!claimed.error) return readAccount(s);
+  }
+  return a;
+}
+
+async function readAccount(s: Session): Promise<Account> {
   const [admin, teaches, profile, application] = await Promise.all([
     supabase.rpc('is_admin'),
     supabase.rpc('is_approved_instructor', { _user_id: s.user.id }),

@@ -4,7 +4,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from './supabase';
 
 /** Address of the separate Instructor website (shown to instructors who try to sign in here). */
-export const INSTRUCTOR_SITE = (import.meta.env.VITE_INSTRUCTOR_SITE_URL as string | undefined) ?? 'http://localhost:5174';
+export const INSTRUCTOR_SITE =
+  (import.meta.env.VITE_INSTRUCTOR_SITE_URL as string | undefined) ??
+  (window.location.hostname.endsWith('vercel.app') ? 'https://cvsu-cms-instructor.vercel.app' : 'http://localhost:5174');
 
 type AuthValue = {
   status: 'loading' | 'signed-out' | 'signed-in';
@@ -18,10 +20,12 @@ type AuthValue = {
   signInWithGoogle: () => Promise<string | null>;
   sendReset: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Not an administrator: remove a login Google just created for nothing, then sign out. */
+  rejectNonAdmin: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
-export const NOT_ADMIN = `This account is not an administrator. Instructors use the Instructor website (${INSTRUCTOR_SITE}); students use the mobile app.`;
+export const NOT_ADMIN = 'Sign-in failed. This account is not an administrator.';
 
 type Account = { isAdmin: boolean; name: string };
 const NONE: Account = { isAdmin: false, name: '' };
@@ -84,6 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async sendReset(email) {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/reset-password` });
       return error?.message ?? null;
+    },
+    async rejectNonAdmin() {
+      if (session?.user.app_metadata?.provider === 'google') await supabase.rpc('discard_my_new_account');
+      await supabase.auth.signOut({ scope: 'local' });
     },
     async signOut() {
       // 'local' ends only this browser's admin session (not the same user's sessions elsewhere).
