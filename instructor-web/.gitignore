@@ -4,3 +4,8 @@ dist/
 
 .vercel
 .env*
+
+# Environment files: never commit real keys (copy .env.example to .env instead)
+.env
+.env.*
+!.env.example
