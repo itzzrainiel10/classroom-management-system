@@ -114,7 +114,7 @@ export default function ActivityLog() {
                     <td>{cap(a.actor_role)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(a.created_at)}</td>
                     <td>
-                      <span className={`badge ${/pending|invited|returned/i.test(a.result) ? 'gold' : 'green'}`}>{a.result}</span>
+                      <span className={`badge ${/fail/i.test(a.result) ? 'red' : /pending|invited|returned/i.test(a.result) ? 'gold' : 'green'}`}>{a.result}</span>
                     </td>
                   </tr>
                 ))}
