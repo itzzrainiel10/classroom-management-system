@@ -6,13 +6,11 @@ import { colors, themed } from '@/constants/theme';
 
 const SEAL = require('../../assets/images/splash-icon.png');
 
-/** Decorative layer for green headers: soft rings + a faint university seal. Place first inside the green container. */
+/** Decorative layer for green headers: a faint university seal. Place first inside the green container. */
 export function HeroBackdrop({ sealSize = 220 }: { sealSize?: number }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <View style={[styles.ring, { width: 320, height: 320, top: -160, right: -110 }]} />
-      <View style={[styles.ring, { width: 200, height: 200, bottom: -120, left: -70 }]} />
-      {sealSize > 0 ? <Image source={SEAL} style={[styles.watermark, { width: sealSize, height: sealSize, right: -sealSize * 0.28, top: 18 }]} resizeMode="contain" /> : null}
+      {sealSize > 0 ? <Image source={SEAL} style={[styles.watermark, { width: sealSize, height: sealSize, right: -sealSize * -0., top: -18 }]} resizeMode="contain" /> : null}
     </View>
   );
 }
@@ -47,7 +45,6 @@ export function HeroTopBar({ role, onSettings, onSignOut, onBell, showLogo = tru
 }
 
 const styles = themed(() => StyleSheet.create({
-  ring: { position: 'absolute', borderRadius: 999, borderWidth: 28, borderColor: 'rgba(255,255,255,0.05)' },
   watermark: { position: 'absolute', opacity: 0.07 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
