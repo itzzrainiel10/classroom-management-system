@@ -17,12 +17,20 @@ export function HeroBackdrop({ sealSize = 220 }: { sealSize?: number }) {
   );
 }
 
+export function HeroLogoWatermark({ size = 180 }: { size?: number }) {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Image source={SEAL} style={{ position: 'absolute', width: size, height: size, right: -size * 0.0, top: -size * 0.1, opacity: 0.08 }} resizeMode="contain" />
+    </View>
+  );
+}
+
 /** Top row of a dashboard header: small seal + "CvSU · ROLE" on the left, notifications and Settings on the right. */
-export function HeroTopBar({ role, onSettings, onSignOut, onBell }: { role: string; onSettings?: () => void; onSignOut?: () => void; onBell?: () => void }) {
+export function HeroTopBar({ role, onSettings, onSignOut, onBell, showLogo = true }: { role: string; onSettings?: () => void; onSignOut?: () => void; onBell?: () => void; showLogo?: boolean }) {
   return (
     <View style={styles.top}>
       <View style={styles.brand}>
-        <Image source={SEAL} style={styles.brandSeal} resizeMode="contain" />
+        {showLogo ? <Image source={SEAL} style={styles.brandSeal} resizeMode="contain" /> : null}
         <View>
           <Text style={styles.brandName}>CvSU CMS</Text>
           <Text style={styles.brandRole}>{role.toUpperCase()}</Text>

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HeroBackdrop, HeroTopBar } from '@/components/hero';
+import { HeroBackdrop, HeroLogoWatermark, HeroTopBar } from '@/components/hero';
 import { MenuRow } from '@/components/menu-row';
 import { TermBanner, termPhase, useTimetable, weeklyHours } from '@/components/official-schedule';
 import { RenewalCardView, useRenewalState } from '@/components/renewal-card';
@@ -39,7 +39,7 @@ export default function InstructorHome() {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
         <Screen onRefresh={renewal.refresh}>
           <View style={styles.hero}>
-            <HeroBackdrop />
+            <HeroLogoWatermark />
             <HeroTopBar role="Instructor" onSettings={() => router.push('/settings')} onBell={() => router.push('/instructor/notifications')} />
             <OnPrimary size="lg">Confirm your teaching status</OnPrimary>
             <OnPrimary>Submit your renewal to access your dashboard.</OnPrimary>
