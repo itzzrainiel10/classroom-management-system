@@ -117,6 +117,33 @@ export function ErrorNote({ message }: { message: string }) {
   );
 }
 
+export function ActionIconButton({
+  action,
+  label,
+  onClick,
+  to,
+}: {
+  action: 'edit' | 'delete';
+  label: string;
+  onClick?: () => void;
+  to?: string;
+}) {
+  const className = `icon-action ${action}`;
+  const icon = <Icon name={action === 'edit' ? 'edit' : 'trash'} size={16} />;
+  if (to) {
+    return (
+      <Link to={to} className={className} aria-label={label} title={label}>
+        {icon}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={className} onClick={onClick} aria-label={label} title={label}>
+      {icon}
+    </button>
+  );
+}
+
 export function Modal({ title, sub, onClose, children, footer }: { title: string; sub?: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
+import { ActionIconButton, Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
 import { deleteSubject, saveSubject, type Subject } from '../services/data';
 
 export default function Subjects({ embedded = false }: { embedded?: boolean } = {}) {
@@ -71,12 +71,8 @@ export default function Subjects({ embedded = false }: { embedded?: boolean } = 
                       <td className="num">{uses(s.id)}</td>
                       <td className="num">
                         <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
-                            Edit
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.code}`}>
-                            <Icon name="trash" size={14} />
-                          </button>
+                          <ActionIconButton action="edit" label={`Edit ${s.code}`} onClick={() => setEdit(s)} />
+                          <ActionIconButton action="delete" label={`Delete ${s.code}`} onClick={() => setDel(s)} />
                         </div>
                       </td>
                     </tr>

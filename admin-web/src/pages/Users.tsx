@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Confirm, Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
+import { ActionIconButton, Confirm, Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
 import { cancelInvitation, classLabel, deleteUser, inviteUser, userRows, type UserRow } from '../services/data';
 import { fmtNum } from '../services/format';
 import EditUser from './EditUser';
@@ -116,27 +116,19 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
                     <td className="num">
                       {u.id ? (
                         <div className="row" style={{ justifyContent: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>
-                          <Link
-                            to={`/admin/users/${u.id}`}
-                            className="btn btn-secondary btn-sm"
-                            aria-label={`Edit ${u.name}`}
-                            title={`Edit ${u.name}`}>
-                            <Icon name="edit" size={14} />
-                          </Link>
+                          <ActionIconButton action="edit" label={`Edit ${u.name}`} to={`/admin/users/${u.id}`} />
                           {!u.isAdmin ? (
-                            <button
-                              className="btn btn-danger btn-sm"
-                              aria-label={`Delete ${u.name}`}
-                              title={`Delete ${u.name}`}
+                            <ActionIconButton
+                              action="delete"
+                              label={`Delete ${u.name}`}
                               onClick={() =>
                                 setDeleting({
                                   ...u,
                                   id: u.id!,
                                   currentClasses: w.classes.filter((c) => c.instructor_id === u.id).length,
                                 })
-                              }>
-                              <Icon name="trash" size={14} />
-                            </button>
+                              }
+                            />
                           ) : null}
                         </div>
                       ) : (

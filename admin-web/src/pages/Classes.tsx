@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Empty, Field, Modal, PageHeader, Person, Success, Tile } from '../components/ui';
+import { ActionIconButton, Empty, Field, Modal, PageHeader, Person, Success, Tile } from '../components/ui';
 import { classStats, enrollStudent, nameOf, removeEnrollment, rolesOf, setClassRoom, studentScore, updateClass } from '../services/data';
 import { fmtNum, fmtPct } from '../services/format';
 import { supabase } from '../services/supabase';
@@ -72,9 +72,7 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
               </div>
             </div>
             <div className="row">
-              <button className="btn btn-secondary btn-sm" onClick={() => setDialog('section')}>
-                <Icon name="edit" size={14} /> Manage section
-              </button>
+              <ActionIconButton action="edit" label="Manage section" onClick={() => setDialog('section')} />
               <button className="btn btn-primary btn-sm" onClick={() => setDialog('enroll')}>
                 <Icon name="plus" size={14} /> Enroll student
               </button>
@@ -124,16 +122,15 @@ export default function Classes({ embedded = false }: { embedded?: boolean } = {
                                 View
                               </Link>
                             ) : null}
-                            <button
-                              className="btn btn-ghost btn-sm"
-                              aria-label={`Remove ${s.email}`}
+                            <ActionIconButton
+                              action="delete"
+                              label={`Remove ${s.email}`}
                               onClick={async () => {
                                 if (!confirm(`Remove ${p?.full_name || s.email} from ${cls.code}?`)) return;
                                 await removeEnrollment(s.id);
                                 await refresh();
-                              }}>
-                              <Icon name="trash" size={14} />
-                            </button>
+                              }}
+                            />
                           </div>
                         </td>
                       </tr>

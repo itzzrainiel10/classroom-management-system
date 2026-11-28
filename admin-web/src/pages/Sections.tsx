@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person } from '../components/ui';
+import { ActionIconButton, CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person } from '../components/ui';
 import { deleteSection, rolesOf, saveSection, setStudentSection, type Section } from '../services/data';
 
 export default function Sections() {
@@ -75,12 +75,8 @@ export default function Sections() {
                           <button className="btn btn-primary btn-sm" onClick={() => setOpenId(s.id)}>
                             Students
                           </button>
-                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit(s)}>
-                            Edit
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label={`Delete ${s.name}`}>
-                            <Icon name="trash" size={14} />
-                          </button>
+                          <ActionIconButton action="edit" label={`Edit ${s.name}`} onClick={() => setEdit(s)} />
+                          <ActionIconButton action="delete" label={`Delete ${s.name}`} onClick={() => setDel(s)} />
                         </div>
                       </td>
                     </tr>
@@ -234,14 +230,14 @@ function SectionStudents({ section, onClose }: { section: Section; onClose: () =
                 <div className="grow">
                   <Person name={p.full_name || p.email} sub={p.student_number ? `${p.email} · ${p.student_number}` : p.email} />
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
+                <ActionIconButton
+                  action="delete"
+                  label={`Remove ${p.full_name || p.email}`}
                   onClick={async () => {
                     await setStudentSection(p.id, null);
                     await refresh();
-                  }}>
-                  Remove
-                </button>
+                  }}
+                />
               </div>
             ))}
           </div>

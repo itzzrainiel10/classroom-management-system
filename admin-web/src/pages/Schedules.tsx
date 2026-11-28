@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
+import { ActionIconButton, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Success } from '../components/ui';
 import { DAYS, ROOM_TYPES, SEMESTERS, deleteSchedule, isApprovedInstructor, nameOf, saveSchedule, type OfficialSchedule, type ScheduleInput, type Workspace } from '../services/data';
 import { downloadCsv, fmtClock, minutesOf, semesterRange } from '../services/format';
 
@@ -280,12 +280,8 @@ export default function Schedules() {
                       <td>{d.room}</td>
                       <td className="num">
                         <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => setEdit({ ...s })}>
-                            Edit
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setDel(s)} aria-label="Delete schedule">
-                            <Icon name="trash" size={14} />
-                          </button>
+                          <ActionIconButton action="edit" label={`Edit ${s.code}`} onClick={() => setEdit({ ...s })} />
+                          <ActionIconButton action="delete" label={`Delete ${s.code}`} onClick={() => setDel(s)} />
                         </div>
                       </td>
                     </tr>

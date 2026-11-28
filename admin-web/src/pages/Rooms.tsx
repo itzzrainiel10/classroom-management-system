@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
+import { ActionIconButton, CardHead, Confirm, Empty, ErrorNote, Field, Modal, PageHeader } from '../components/ui';
 import { ROOM_TYPES, deleteRoom, saveRoom, type Room, type RoomType } from '../services/data';
 
 /** /admin/rooms — lecture rooms and laboratories that classes are scheduled in. */
@@ -45,12 +45,8 @@ export default function Rooms() {
                     {[r.building, r.capacity ? `${r.capacity} seats` : '', `${uses(r.id)} class${uses(r.id) === 1 ? '' : 'es'}`].filter(Boolean).join(' · ')}
                   </small>
                 </div>
-                <button className="btn btn-secondary btn-sm" onClick={() => setEdit(r)}>
-                  Edit
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setDel(r)} aria-label={`Delete ${r.name}`}>
-                  <Icon name="trash" size={14} />
-                </button>
+                <ActionIconButton action="edit" label={`Edit ${r.name}`} onClick={() => setEdit(r)} />
+                <ActionIconButton action="delete" label={`Delete ${r.name}`} onClick={() => setDel(r)} />
               </div>
             ))}
           </div>

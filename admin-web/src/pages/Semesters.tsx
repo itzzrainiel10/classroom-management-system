@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Icon } from '../components/icons';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { CardHead, Empty, ErrorNote, Field, Loading, Modal, PageHeader } from '../components/ui';
+import { ActionIconButton, CardHead, Empty, ErrorNote, Field, Loading, Modal, PageHeader } from '../components/ui';
 import { SEMESTERS, saveSettings, useData } from '../services/data';
 import { fmtDateTime, fmtDay, fmtNum, semesterRange } from '../services/format';
 import { endSemester, fetchSemesters, startSemester, type EndPreview, type Semester } from '../services/semesters';
@@ -62,9 +62,7 @@ export default function Semesters() {
             right={
               <div className="row">
                 <span className="badge green">Active</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)}>
-                  <Icon name="edit" size={14} /> Edit
-                </button>
+                <ActionIconButton action="edit" label="Edit active semester" onClick={() => setEditing(true)} />
               </div>
             }
           />

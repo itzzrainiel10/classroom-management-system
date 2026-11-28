@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person, Tile } from '../components/ui';
+import { ActionIconButton, Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person, Tile } from '../components/ui';
 import { createInstructor, deleteInstructor, saveInstructor, tempPassword } from '../services/instructors';
 import { phStored } from '../services/phone';
 import { rolesOf, type InstructorProfile, type Profile } from '../services/data';
@@ -110,20 +110,12 @@ export default function Instructors() {
                           <Link className="btn btn-primary btn-sm" to={`/admin/schedules?instructor=${r.p.id}`}>
                             Schedule
                           </Link>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            aria-label={`Edit ${r.p.full_name || r.p.email}`}
-                            title={`Edit ${r.p.full_name || r.p.email}`}
-                            onClick={() => setForm({ p: r.p, ip: r.ip })}>
-                            <Icon name="edit" size={14} />
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            aria-label={`Delete ${r.p.full_name || r.p.email}`}
-                            title={`Delete ${r.p.full_name || r.p.email}`}
-                            onClick={() => setDel({ p: r.p, classes: w.classes.filter((c) => c.instructor_id === r.p.id).length })}>
-                            <Icon name="trash" size={14} />
-                          </button>
+                          <ActionIconButton action="edit" label={`Edit ${r.p.full_name || r.p.email}`} onClick={() => setForm({ p: r.p, ip: r.ip })} />
+                          <ActionIconButton
+                            action="delete"
+                            label={`Delete ${r.p.full_name || r.p.email}`}
+                            onClick={() => setDel({ p: r.p, classes: w.classes.filter((c) => c.instructor_id === r.p.id).length })}
+                          />
                         </div>
                       </td>
                     </tr>
