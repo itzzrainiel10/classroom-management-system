@@ -496,6 +496,8 @@ a.list-item:hover, button.list-item:hover { background: var(--hover-bg); }
 /* =========================== Weekly calendar =========================== */
 .week-grid { display: grid; grid-template-columns: 60px repeat(var(--days), minmax(120px, 1fr)); min-width: calc(60px + var(--days) * 120px); position: relative; }
 .week-head { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: 11px 8px; font-size: calc(11.5px * var(--text-scale)); font-weight: 600; letter-spacing: 0.4px; color: var(--text-soft); text-align: center; z-index: 1; }
+.week-head[class*='day-tone-'] { color: var(--on-primary); background: var(--primary); box-shadow: inset 0 3px 0 var(--gold); border: 1px solid var(--line-strong); border-radius: 0; }
+.week-head.day-tone-6 { background: linear-gradient(var(--gold) 0 3px, var(--primary) 3px); box-shadow: none; }
 .week-head.today { color: var(--primary); }
 .week-col { position: relative; border-left: 1px solid var(--line); }
 .week-hour { height: 52px; border-bottom: 1px solid var(--grid); font-size: calc(11px * var(--text-scale)); color: var(--muted); padding: 2px 8px 0 0; text-align: right; }
@@ -505,6 +507,12 @@ a.list-item:hover, button.list-item:hover { background: var(--hover-bg); }
   background: var(--slot-bg); border: 0; border-left: 3px solid var(--slot); overflow: hidden; cursor: pointer; text-align: left; color: var(--text);
   transition: box-shadow 0.15s, transform 0.15s;
 }
+.week-grid .week-slot {
+  left: 8px; right: auto; max-width: calc(100% - 16px); border-radius: 0; padding: 4px 6px;
+  font-size: calc(11px * var(--text-scale)); line-height: 1.2; border: 2px solid var(--slot); border-left-width: 4px; box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s;
+}
+.week-grid .week-slot:hover { box-shadow: var(--shadow-md); transform: none; z-index: 2; }
 .week-slot:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); z-index: 2; }
 .week-slot b { display: block; font-size: calc(12px * var(--text-scale)); color: var(--slot); }
 .week-slot small { display: block; color: var(--text-soft); font-size: calc(11px * var(--text-scale)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

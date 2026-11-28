@@ -71,7 +71,7 @@ export function SemesterEnded({ term }: { term: Term | null | undefined }) {
 /** One official class: subject, time, section, room, instructor. */
 export function OfficialClassCard({ c, viewer }: { c: OfficialClass; viewer: 'student' | 'instructor' }) {
   return (
-    <Card style={{ paddingVertical: 12 }}>
+    <Card style={[styles.classCard, { paddingVertical: 12 }]}>
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={styles.bar} />
         <View style={{ flex: 1, gap: 3 }}>
@@ -218,17 +218,19 @@ export function WeekPlanner({
         <Caption>{inSession(term, days[picked]) ? 'No classes on this day.' : 'No classes — outside the semester dates.'}</Caption>
       ) : (
         daySlots.map((s) => (
-          <Row key={s.key} style={{ alignItems: 'flex-start' }}>
-            <View style={[styles.bar, s.extra && { backgroundColor: colors.gold }]} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Caption style={{ fontWeight: '800', color: colors.primary }}>
-                {fmtTime(s.start)}–{fmtTime(s.end)}
-                {s.extra ? '  · Extra meeting' : ''}
-              </Caption>
-              <H2>{s.title}</H2>
-              {s.sub ? <Caption>{s.sub}</Caption> : null}
-            </View>
-          </Row>
+          <Card key={s.key} style={[styles.classCard, s.extra && { borderColor: colors.gold }]}>
+            <Row style={{ alignItems: 'flex-start' }}>
+              <View style={[styles.bar, s.extra && { backgroundColor: colors.gold }]} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Caption style={{ fontWeight: '800', color: colors.primary }}>
+                  {fmtTime(s.start)}–{fmtTime(s.end)}
+                  {s.extra ? '  · Extra meeting' : ''}
+                </Caption>
+                <H2>{s.title}</H2>
+                {s.sub ? <Caption>{s.sub}</Caption> : null}
+              </View>
+            </Row>
+          </Card>
         ))
       )}
     </Card>
@@ -311,6 +313,7 @@ const styles = themed(() => StyleSheet.create({
   term: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primarySoft, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
   termText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   termDates: { color: colors.textSoft, fontSize: 12, marginTop: 1 },
+  classCard: { borderRadius: 0, borderWidth: 1, borderColor: colors.primary, padding: 10 },
   bar: { width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.primary },
   navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   strip: { flexDirection: 'row', gap: 4 },
@@ -321,9 +324,9 @@ const styles = themed(() => StyleSheet.create({
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
   table: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.tableLine, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 7, gap: 4 },
-  thead: { backgroundColor: colors.tableHead, borderBottomWidth: 1, borderBottomColor: colors.tableLine, paddingVertical: 6 },
+  thead: { backgroundColor: colors.primary, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingVertical: 6 },
   dayBreak: { borderTopWidth: 1, borderTopColor: colors.line },
-  th: { fontSize: 10.5, fontWeight: '700', color: colors.textSoft },
+  th: { fontSize: 10.5, fontWeight: '700', color: colors.onPrimary },
   td: { fontSize: 11, color: colors.textSoft },
   tdSmall: { fontSize: 10, color: colors.muted },
   cDay: { width: 30 },

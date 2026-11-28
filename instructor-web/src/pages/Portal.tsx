@@ -469,8 +469,8 @@ export function InstructorClassSchedule() {
           <div className="table-wrap">
             <div className="week-grid" style={{ ['--days' as string]: days }}>
               <div className="week-head" />
-              {DAYS.slice(0, days).map((day) => (
-                <div key={day} className="week-head">
+              {DAYS.slice(0, days).map((day, i) => (
+                <div key={day} className={`week-head day-tone-${i + 1}`}>
                   {day.slice(0, 3).toUpperCase()}
                 </div>
               ))}

@@ -12,7 +12,7 @@ import { downloadCsv, fmtClock, minutesOf, semesterRange } from '../services/for
 const tint = (code: string) => `c${[...code].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 6}`;
 
 
-const HOUR_PX = 52;
+const HOUR_PX = 44;
 
 /** Everything needed to show one schedule row. */
 function describe(w: Workspace, s: OfficialSchedule) {
@@ -81,6 +81,18 @@ export default function Schedules() {
   }, [w]);
   const depts = [...new Set(w.instructorProfiles.map((p) => p.department).filter(Boolean))].sort();
   const needle = q.trim().toLowerCase();
+  const activeFilterCount = [needle, instructor !== 'all', section !== 'all', subject !== 'all', day !== 'all', year !== 'all', dept !== 'all'].filter(Boolean).length;
+  const clearFilters = () => {
+    setQ('');
+    setDept('all');
+    setYear('all');
+    setSubject('all');
+    setDay('all');
+    const next = new URLSearchParams(params);
+    next.delete('instructor');
+    next.delete('section');
+    setParams(next, { replace: true });
+  };
 
   const rows = w.schedules
     .filter((s) => s.semester === semester && s.academic_year === academicYear)
@@ -150,87 +162,126 @@ export default function Schedules() {
         </div>
       ) : null}
 
-      <div className="filters">
-        <div className="search" style={{ margin: 0, flex: '1 1 220px', maxWidth: 280 }}>
-          <Icon name="search" size={16} />
-          <input placeholder="Search instructor or ID" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search instructor" />
-        </div>
-        <select className="select" value={instructor} onChange={(e) => setParam('instructor', e.target.value)} aria-label="Instructor">
-          <option value="all">All instructors</option>
-          {approved.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.full_name || p.email}
-            </option>
-          ))}
-        </select>
-        <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department">
-          <option value="all">All departments</option>
-          {depts.map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
-        <select className="select" value={year} onChange={(e) => setYear(e.target.value)} aria-label="Year level">
-          <option value="all">All year levels</option>
-          {[...new Set(w.sections.map((s) => s.year_level))].sort().map((y) => (
-            <option key={y} value={y}>
-              Year {y}
-            </option>
-          ))}
-        </select>
-        <select className="select" value={section} onChange={(e) => setParam('section', e.target.value)} aria-label="Section">
-          <option value="all">All sections</option>
-          {w.sections.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select className="select" value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject">
-          <option value="all">All subjects</option>
-          {w.subjects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.code} · {s.name}
-            </option>
-          ))}
-        </select>
-        <select className="select" value={day} onChange={(e) => setDay(e.target.value)} aria-label="Day">
-          <option value="all">All days</option>
-          {DAYS.map((d, i) => (
-            <option key={d} value={i + 1}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <select className="select" value={term} onChange={(e) => setTerm(e.target.value)} aria-label="Term">
-          {terms.map((t) => (
-            <option key={t} value={t}>
-              {t.replace('|', ' · AY ')}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="card">
-        <div className="card-head">
+      <section className="schedule-filters card" aria-label="Schedule filters">
+        <div className="schedule-filter-head">
           <div>
-            <h2>
-              {rows.length} class{rows.length === 1 ? '' : 'es'} · {semester} · AY {academicYear}
-            </h2>
+            <span className="schedule-kicker">Schedule filters</span>
+            <h2>Find a class</h2>
+            <p>{activeFilterCount ? `${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'} applied` : 'Showing all scheduled classes'}</p>
+          </div>
+          {activeFilterCount ? (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
+              Clear filters
+            </button>
+          ) : null}
+        </div>
+        <div className="schedule-filter-grid">
+          <label className="schedule-filter">
+            <span>Semester & academic year</span>
+            <select className="select" value={term} onChange={(e) => setTerm(e.target.value)} aria-label="Term">
+              {terms.map((t) => (
+                <option key={t} value={t}>
+                  {t.replace('|', ' · AY ')}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Search instructor</span>
+            <div className="schedule-search">
+              <Icon name="search" size={16} />
+              <input placeholder="Name or employee ID" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search instructor" />
+            </div>
+          </label>
+          <label className="schedule-filter">
+            <span>Instructor</span>
+            <select className="select" value={instructor} onChange={(e) => setParam('instructor', e.target.value)} aria-label="Instructor">
+              <option value="all">All instructors</option>
+              {approved.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name || p.email}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Department</span>
+            <select className="select" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department">
+              <option value="all">All departments</option>
+              {depts.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Year level</span>
+            <select className="select" value={year} onChange={(e) => setYear(e.target.value)} aria-label="Year level">
+              <option value="all">All year levels</option>
+              {[...new Set(w.sections.map((s) => s.year_level))].sort().map((y) => (
+                <option key={y} value={y}>
+                  Year {y}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Section</span>
+            <select className="select" value={section} onChange={(e) => setParam('section', e.target.value)} aria-label="Section">
+              <option value="all">All sections</option>
+              {w.sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Subject</span>
+            <select className="select" value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject">
+              <option value="all">All subjects</option>
+              {w.subjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} · {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="schedule-filter">
+            <span>Day</span>
+            <select className="select" value={day} onChange={(e) => setDay(e.target.value)} aria-label="Day">
+              <option value="all">All days</option>
+              {DAYS.map((d, i) => (
+                <option key={d} value={i + 1}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div className="card schedule-results">
+        <div className="card-head schedule-results-head">
+          <div className="schedule-results-copy">
+            <span className="schedule-kicker">Weekly timetable</span>
+            <h2>{semester} · AY {academicYear}</h2>
             <p>
+              {rows.length} class{rows.length === 1 ? '' : 'es'}
+              {activeFilterCount ? ` matching ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : ''}
+              {' · '}
               {semester === w.settings.current_semester && academicYear === w.settings.current_academic_year
-                ? `Weekly classes · ${semesterRange(w.settings.semester_start, w.settings.semester_end)} · `
-                : 'Weekly classes · '}
-              Click a class to edit it.
+                ? semesterRange(w.settings.semester_start, w.settings.semester_end)
+                : 'Click any class to view or edit it'}
             </p>
           </div>
-          <div className="view-toggle" role="tablist">
-            <button className={view === 'calendar' ? 'on' : ''} onClick={() => setView('calendar')}>
+          <div className="view-toggle" role="tablist" aria-label="Schedule view">
+            <button type="button" role="tab" aria-selected={view === 'calendar'} className={view === 'calendar' ? 'on' : ''} onClick={() => setView('calendar')}>
               <Icon name="calendar" size={15} /> Week
             </button>
-            <button className={view === 'table' ? 'on' : ''} onClick={() => setView('table')}>
+            <button type="button" role="tab" aria-selected={view === 'table'} className={view === 'table' ? 'on' : ''} onClick={() => setView('table')}>
               <Icon name="menu" size={15} /> Table
             </button>
-            <button className={view === 'section' ? 'on' : ''} onClick={() => setView('section')}>
+            <button type="button" role="tab" aria-selected={view === 'section'} className={view === 'section' ? 'on' : ''} onClick={() => setView('section')}>
               <Icon name="school" size={15} /> By section
             </button>
           </div>
@@ -259,7 +310,7 @@ export default function Schedules() {
                   {pageRows.map(({ s, d }) => (
                     <tr key={s.id}>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <b>{DAYS[s.day_of_week - 1]}</b>
+                        <b className={`schedule-day day-tone-${s.day_of_week}`}>{DAYS[s.day_of_week - 1]}</b>
                         <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{d.time}</div>
                       </td>
                       <td>
@@ -280,8 +331,8 @@ export default function Schedules() {
                       <td>{d.room}</td>
                       <td className="num">
                         <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                          <ActionIconButton action="edit" label={`Edit ${s.code}`} onClick={() => setEdit({ ...s })} />
-                          <ActionIconButton action="delete" label={`Delete ${s.code}`} onClick={() => setDel(s)} />
+                          <ActionIconButton action="edit" label={`Edit ${d.subjectCode} schedule`} onClick={() => setEdit({ ...s })} />
+                          <ActionIconButton action="delete" label={`Delete ${d.subjectCode} schedule`} onClick={() => setDel(s)} />
                         </div>
                       </td>
                     </tr>
@@ -377,7 +428,7 @@ function BySection({ w, rows, onOpen }: { w: Workspace; rows: { s: OfficialSched
                       </td>
                       <td>{d.instructor}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {DAYS[s.day_of_week - 1]} · {d.time}
+                        <span className={`schedule-day day-tone-${s.day_of_week}`}>{DAYS[s.day_of_week - 1]}</span> · {d.time}
                       </td>
                       <td>{d.room}</td>
                     </tr>
@@ -394,36 +445,38 @@ function BySection({ w, rows, onOpen }: { w: Workspace; rows: { s: OfficialSched
 
 function WeekCalendar({ w, items, onOpen, hideSection = false }: { w: Workspace; items: OfficialSchedule[]; onOpen: (s: OfficialSchedule) => void; hideSection?: boolean }) {
   const days = items.some((s) => s.day_of_week === 7) ? 7 : 6;
+  const todayDay = new Date().getDay() || 7;
   const start = Math.min(7 * 60, ...items.map((s) => Math.floor(minutesOf(s.start_time) / 60) * 60));
   const end = Math.max(18 * 60, ...items.map((s) => Math.ceil(minutesOf(s.end_time) / 60) * 60));
-  const hours = Array.from({ length: (end - start) / 60 }, (_, i) => start / 60 + i);
+  const ticks = Array.from({ length: (end - start) / 30 }, (_, i) => start + i * 30);
+  const calendarHeight = ((end - start) / 60) * HOUR_PX;
   return (
     <div className="table-wrap">
       <div className="week-grid" style={{ ['--days' as string]: days }}>
         <div className="week-head" />
-        {DAYS.slice(0, days).map((d) => (
-          <div key={d} className="week-head">
+        {DAYS.slice(0, days).map((d, i) => (
+          <div key={d} className={`week-head day-tone-${i + 1}${todayDay === i + 1 ? ' today' : ''}`}>
             {d.slice(0, 3).toUpperCase()}
           </div>
         ))}
         <div>
-          {hours.map((h) => (
-            <div key={h} className="week-hour">
-              {fmtClock(`${h}:00`).replace(':00', '')}
+          {ticks.map((minute) => (
+            <div key={minute} className={`week-hour ${minute % 60 === 0 ? 'hour' : 'half-hour'}`}>
+              {minute % 60 === 0 ? fmtClock(`${Math.floor(minute / 60)}:00`) : null}
             </div>
           ))}
         </div>
         {DAYS.slice(0, days).map((d, i) => (
-          <div key={d} className="week-col" style={{ height: hours.length * HOUR_PX }}>
-            {hours.map((h) => (
-              <div key={h} style={{ height: HOUR_PX, borderBottom: '1px solid var(--grid)' }} />
+          <div key={d} className="week-col" style={{ height: calendarHeight }}>
+            {ticks.map((minute) => (
+              <div key={minute} className={minute % 60 === 0 ? 'week-grid-hour' : 'week-grid-half-hour'} />
             ))}
             {items
               .filter((s) => s.day_of_week === i + 1)
               .map((s) => {
                 const dsc = describe(w, s);
                 const top = ((minutesOf(s.start_time) - start) / 60) * HOUR_PX;
-                const height = ((minutesOf(s.end_time) - minutesOf(s.start_time)) / 60) * HOUR_PX - 2;
+                const height = ((minutesOf(s.end_time) - minutesOf(s.start_time)) / 60) * HOUR_PX;
                 return (
                   <button key={s.id} className={`week-slot ${tint(dsc.subjectCode)}`} style={{ top, height }} onClick={() => onOpen(s)} title={`${dsc.subjectCode} ${dsc.subjectName}\n${dsc.section} · ${dsc.time}\n${dsc.instructor} · ${dsc.room}`}>
                     <b>{dsc.subjectCode}</b>
