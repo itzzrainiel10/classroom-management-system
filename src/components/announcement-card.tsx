@@ -1,12 +1,26 @@
-import { StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AnnouncementChat } from '@/components/announcement-chat';
 import { Body, Card, H2 } from '@/components/ui';
 import { colors, radius, themed } from '@/constants/theme';
 import type { Announcement } from '@/lib/data';
 import { fmtDate } from '@/lib/format';
 
 /** One announcement: who posted it (instructor name), when, which class, then the message. */
-export function AnnouncementCard({ a, classLabel, fallbackName = 'Your instructor' }: { a: Announcement; classLabel?: string; fallbackName?: string }) {
+export function AnnouncementCard({
+  a,
+  classLabel,
+  fallbackName = 'Your instructor',
+  discussionInitiallyOpen = false,
+}: {
+  a: Announcement;
+  classLabel?: string;
+  fallbackName?: string;
+  discussionInitiallyOpen?: boolean;
+}) {
+  const [discussionOpen, setDiscussionOpen] = useState(discussionInitiallyOpen);
   const name = a.author_name?.trim() || fallbackName;
   const initials =
     name
@@ -39,6 +53,20 @@ export function AnnouncementCard({ a, classLabel, fallbackName = 'Your instructo
       </View>
       <H2>{a.title}</H2>
       {a.message ? <Body>{a.message}</Body> : null}
+      {!a._pending ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={discussionOpen ? 'Hide Messages' : 'Open Messages'}
+            onPress={() => setDiscussionOpen((open) => !open)}
+            style={styles.discussionToggle}>
+            <Ionicons name="chatbubbles-outline" size={17} color={colors.primary} />
+            <Text style={styles.discussionText}>{discussionOpen ? 'Hide Messages' : 'Messages'}</Text>
+            <Ionicons name={discussionOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+          </Pressable>
+          {discussionOpen ? <AnnouncementChat announcementId={a.id} /> : null}
+        </>
+      ) : null}
     </Card>
   );
 }
@@ -52,5 +80,7 @@ const styles = themed(() =>
     meta: { color: colors.textSoft, fontSize: 12 },
     classPill: { maxWidth: 120, backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
     classText: { color: colors.primary, fontSize: 11.5, fontWeight: '800' },
+    discussionToggle: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+    discussionText: { flex: 1, color: colors.primary, fontSize: 13, fontWeight: '700' },
   }),
 );

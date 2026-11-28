@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 
 import { AnnouncementCard } from '@/components/announcement-card';
@@ -16,15 +16,18 @@ import { useOutbox } from '@/lib/outbox';
 type Detail = Awaited<ReturnType<typeof fetchClassDetail>>;
 
 export default function ManageClass() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: requestedTab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { save } = useOutbox();
   const { fullName } = useAuth();
-  const [tab, setTab] = useState<'students' | 'activities' | 'settings'>('students');
+  const [tab, setTab] = useState<'students' | 'activities' | 'announcements' | 'settings'>('announcements');
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  useEffect(() => {
+    if (requestedTab === 'announcements') setTab('announcements');
+  }, [id, requestedTab]);
 
   const { data, loading, offline, savedAt, refresh } = useRemote<Detail>(`class:${id}`, () => fetchClassDetail(id), async (d) => {
     const [pStudents, gone] = await Promise.all([pendingRows<Student>('class_students'), pendingDeletes('class_students')]);
@@ -88,6 +91,7 @@ export default function ManageClass() {
       <Segmented
         options={[
           { label: 'Students', value: 'students' as const },
+          { label: 'Announcements', value: 'announcements' as const },
           { label: 'Activities', value: 'activities' as const },
           { label: 'Settings', value: 'settings' as const },
         ]}
@@ -144,7 +148,6 @@ export default function ManageClass() {
           <Row>
             <Button title="Quiz" icon="add" small style={{ flex: 1 }} onPress={() => router.push({ pathname: '/instructor/quiz/new', params: { classId: cls.id } })} />
             <Button title="Assignment" icon="add" small variant="secondary" style={{ flex: 1 }} onPress={() => router.push({ pathname: '/instructor/assignment', params: { classId: cls.id } })} />
-            <Button title="Notice" icon="add" small variant="secondary" style={{ flex: 1 }} onPress={() => router.push({ pathname: '/instructor/announcement', params: { classId: cls.id } })} />
           </Row>
           <Label>Quizzes</Label>
           {data.quizzes.length ? (
@@ -174,13 +177,18 @@ export default function ManageClass() {
           ) : (
             <Caption>No assignments yet.</Caption>
           )}
-          <Label>Announcements</Label>
+        </>
+      ) : null}
+
+      {tab === 'announcements' ? (
+        <>
+          <Label>Announcements · {cls.section}</Label>
           {data.announcements.length ? (
-            data.announcements.map((a) => (
-              <AnnouncementCard key={a.id} a={a} fallbackName={fullName || 'You'} />
+            data.announcements.map((a, index) => (
+              <AnnouncementCard key={a.id} a={a} fallbackName={fullName || 'You'} discussionInitiallyOpen={index === 0} />
             ))
           ) : (
-            <Caption>No announcements yet.</Caption>
+            <Empty icon="megaphone-outline" title="No announcements yet" body="Announcements posted for this section will appear here." />
           )}
         </>
       ) : null}

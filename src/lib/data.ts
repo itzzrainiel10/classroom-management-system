@@ -76,6 +76,8 @@ export type Attempt = {
 export type Attachment = { path: string; name: string; size: number; type: string };
 export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; attachments?: Attachment[]; class?: ClassRef | null; _pending?: true };
 export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string; author_name?: string; class?: ClassRef | null; _pending?: true };
+export type AnnouncementMessage = { id: string; announcement_id: string; author_id: string; author_name: string; message: string; created_at: string; heart_count?: number; hearted_by_me?: boolean };
+export type AnnouncementMentionOption = { user_id: string; full_name: string };
 export type Schedule = { id: string; class_id: string; day_of_week: number; start_time: string; end_time: string; room: string; class?: ClassRef | null; _pending?: true };
 
 /* ---------- Helpers ---------- */
@@ -195,6 +197,69 @@ export async function fetchFeed() {
     assignments: (must(assignments) as Raw[]).map((r) => ({ ...(r as unknown as Assignment), class: (r.classes as ClassRef | null) ?? null })),
     announcements: (must(announcements) as Raw[]).map((r) => ({ ...(r as unknown as Announcement), class: (r.classes as ClassRef | null) ?? null })),
   };
+}
+
+export async function fetchAnnouncementMessages(announcementId: string): Promise<AnnouncementMessage[]> {
+  const c = client();
+  const rows = must(
+    await c
+      .from('announcement_messages')
+      .select('id, announcement_id, author_id, author_name, message, created_at')
+      .eq('announcement_id', announcementId)
+      .order('created_at', { ascending: false })
+      .limit(100),
+  ) as AnnouncementMessage[];
+  if (!rows.length) return rows;
+
+  const [authResult, reactionsResult] = await Promise.all([
+    c.auth.getUser(),
+    c.from('announcement_message_reactions').select('message_id, user_id').eq('announcement_id', announcementId),
+  ]);
+  if (authResult.error) throw new Error(authResult.error.message);
+  const reactions = must(reactionsResult) as { message_id: string; user_id: string }[];
+  const currentUserId = authResult.data.user?.id;
+  const counts = new Map<string, number>();
+  const mine = new Set<string>();
+  for (const reaction of reactions) {
+    counts.set(reaction.message_id, (counts.get(reaction.message_id) ?? 0) + 1);
+    if (reaction.user_id === currentUserId) mine.add(reaction.message_id);
+  }
+  return rows.reverse().map((row) => ({
+    ...row,
+    heart_count: counts.get(row.id) ?? 0,
+    hearted_by_me: mine.has(row.id),
+  }));
+}
+
+export async function fetchAnnouncementMentionOptions(announcementId: string): Promise<AnnouncementMentionOption[]> {
+  return must(await client().rpc('announcement_mention_options', { _announcement_id: announcementId })) as AnnouncementMentionOption[];
+}
+
+export async function sendAnnouncementMessage(announcementId: string, message: string, mentionedUserIds: string[] = []): Promise<AnnouncementMessage> {
+  return must(
+    await client()
+      .from('announcement_messages')
+      .insert({ announcement_id: announcementId, message: message.trim(), mentioned_user_ids: mentionedUserIds })
+      .select('id, announcement_id, author_id, author_name, message, created_at')
+      .single(),
+  ) as AnnouncementMessage;
+}
+
+export async function toggleAnnouncementMessageHeart(announcementId: string, messageId: string, heartedByMe: boolean) {
+  const c = client();
+  const { data, error } = await c.auth.getUser();
+  if (error) throw new Error(error.message);
+  if (!data.user) throw new Error('Sign in to react to messages.');
+
+  const query = c.from('announcement_message_reactions');
+  if (heartedByMe) {
+    must(await query.delete().eq('announcement_id', announcementId).eq('message_id', messageId).eq('user_id', data.user.id).select('message_id'));
+    return;
+  }
+  must(await query.upsert(
+    { announcement_id: announcementId, message_id: messageId, user_id: data.user.id },
+    { onConflict: 'message_id,user_id', ignoreDuplicates: true },
+  ).select('message_id'));
 }
 
 /* ---------- Student reads ---------- */

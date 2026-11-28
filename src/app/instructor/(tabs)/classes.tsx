@@ -21,7 +21,10 @@ export default function InstructorClasses() {
           <Empty icon="people-outline" title="No classes yet" body="Your classes appear here once the administrator schedules a subject for you." />
         ) : null}
         {data?.map((c) => (
-          <Pressable key={c.id} onPress={() => router.push(`/instructor/class/${c.id}`)} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+          <Pressable
+            key={c.id}
+            onPress={() => router.push({ pathname: '/instructor/class/[id]', params: { id: c.id, tab: 'announcements' } })}
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
             <Card style={{ gap: 8 }}>
               <Row style={{ justifyContent: 'space-between' }}>
                 <View style={{ flex: 1 }}>

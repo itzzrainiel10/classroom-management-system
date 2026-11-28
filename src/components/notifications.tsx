@@ -13,7 +13,7 @@ export function useNotifications() {
   return useRemote('notifications', fetchNotifications);
 }
 
-const iconFor = (n: Notice) => (n.kind === 'application' ? (n.title.includes('not') ? 'close-circle' : 'shield-checkmark') : 'calendar');
+const iconFor = (n: Notice) => (n.kind === 'application' ? (n.title.includes('not') ? 'close-circle' : 'shield-checkmark') : n.kind === 'announcement_message' || n.kind === 'announcement_mention' ? 'chatbubbles-outline' : 'calendar');
 
 export function NoticeCard({ n }: { n: Notice }) {
   const unread = !n.read_at;
@@ -61,7 +61,7 @@ export function NotificationsScreen() {
     <Screen onRefresh={refresh}>
       <OfflineNote show={offline} savedAt={savedAt} />
       {loading && !data ? <Loading /> : null}
-      {data && data.length === 0 ? <Empty icon="notifications-outline" title="No notifications" body="Approvals and schedule changes from administrators appear here." /> : null}
+      {data && data.length === 0 ? <Empty icon="notifications-outline" title="No notifications" body="Class messages, approvals and schedule changes appear here." /> : null}
       {data?.map((n) => <NoticeCard key={n.id} n={n} />)}
     </Screen>
   );

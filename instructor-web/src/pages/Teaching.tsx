@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
+import { AnnouncementChat } from '../components/announcement-chat';
 import { Pager, usePaged } from '../components/pager';
 import { CardHead, Confirm, Empty, ErrorNote, Field, Loading, Modal, PageHeader, Success, Tile } from '../components/ui';
 import { useData } from '../hooks/useData';
@@ -497,6 +498,7 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [del, setDel] = useState<{ id: string; title: string; attachments?: Attachment[] } | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [fileKey, setFileKey] = useState(0);
 
@@ -520,6 +522,7 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
       }
       else await postAnnouncement({ class_id: v.class_id, title: v.title, message: v.body });
       setV({ ...v, title: '', body: '', due: '' });
+      setChatId(null);
       setMsg({ text: `${isTask ? 'Assignment' : 'Announcement'} posted. Enrolled students see it in the mobile app.`, ok: true });
       await posts.refresh();
     } catch (e) {
@@ -529,8 +532,19 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
     }
   };
 
-  const list = (isTask ? posts.data?.assignments : posts.data?.announcements) ?? [];
+  const list = isTask
+    ? posts.data?.assignments ?? []
+    : (posts.data?.announcements ?? []).filter((announcement) => announcement.class_id === v.class_id);
   const clsOf = (id: string) => classes.data?.find((c) => c.id === id);
+  const recentAnnouncement = !isTask ? posts.data?.announcements.find((a) => a.class_id === v.class_id) : undefined;
+
+  useEffect(() => {
+    if (isTask) {
+      setChatId(null);
+      return;
+    }
+    setChatId(recentAnnouncement?.id ?? null);
+  }, [isTask, recentAnnouncement?.id]);
 
   return (
     <>
@@ -541,53 +555,60 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
       {classes.error ? <ErrorNote message={classes.error} /> : null}
       <div className="grid grid-2-even" style={{ alignItems: 'start' }}>
         <div className="card">
-          <CardHead title={isTask ? 'Post an assignment' : 'Post an announcement'} />
-          {!classes.data ? (
-            <Loading />
-          ) : (
-            <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <ClassSelect classes={classes.data} value={v.class_id} onChange={(class_id) => setV({ ...v, class_id })} />
-              <Field label="Title">
-                <input className="input" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder={isTask ? 'e.g. Lab Activity 3 – Flexbox' : 'e.g. No class on Friday'} />
-              </Field>
-              <Field label={isTask ? 'Instructions (optional)' : 'Message'}>
-                <textarea className="textarea" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} />
-              </Field>
-              {isTask ? (
-                <Field label="Attachments (optional)" hint={`PDF, Word, PowerPoint, Excel, images or ZIP · up to ${MAX_FILE_MB} MB each`}>
-                  <input
-                    key={fileKey}
-                    className="input"
-                    type="file"
-                    multiple
-                    accept={ACCEPT_FILES}
-                    onChange={(e) => setFiles([...files, ...Array.from(e.target.files ?? [])])}
-                  />
+            <CardHead title={isTask ? 'Post an assignment' : 'Post an announcement'} />
+            {!classes.data ? (
+              <Loading />
+            ) : (
+              <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <ClassSelect
+                  classes={classes.data}
+                  value={v.class_id}
+                  onChange={(class_id) => {
+                    setV({ ...v, class_id });
+                    setChatId(null);
+                  }}
+                />
+                <Field label="Title">
+                  <input className="input" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder={isTask ? 'e.g. Lab Activity 3 – Flexbox' : 'e.g. No class on Friday'} />
                 </Field>
-              ) : null}
-              {isTask && files.length ? (
-                <div className="attach-list">
-                  {files.map((f, i) => (
-                    <span key={i} className="attach-chip">
-                      <Icon name="clipboard" size={13} /> {f.name} <small>{fmtSize(f.size)}</small>
-                      <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
-                        <Icon name="x" size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              {isTask ? (
-                <Field label="Due date (optional)">
-                  <input className="input" type="datetime-local" value={v.due} onChange={(e) => setV({ ...v, due: e.target.value })} />
+                <Field label={isTask ? 'Instructions (optional)' : 'Message'}>
+                  <textarea className="textarea" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} />
                 </Field>
-              ) : null}
-              {msg ? msg.ok ? <div className="note"><Icon name="check" /><div>{msg.text}</div></div> : <ErrorNote message={msg.text} /> : null}
-              <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={() => void submit()} disabled={busy}>
-                {busy ? 'Posting…' : isTask ? 'Post assignment' : 'Post announcement'}
-              </button>
-            </div>
-          )}
+                {isTask ? (
+                  <Field label="Attachments (optional)" hint={`PDF, Word, PowerPoint, Excel, images or ZIP · up to ${MAX_FILE_MB} MB each`}>
+                    <input
+                      key={fileKey}
+                      className="input"
+                      type="file"
+                      multiple
+                      accept={ACCEPT_FILES}
+                      onChange={(e) => setFiles([...files, ...Array.from(e.target.files ?? [])])}
+                    />
+                  </Field>
+                ) : null}
+                {isTask && files.length ? (
+                  <div className="attach-list">
+                    {files.map((f, i) => (
+                      <span key={i} className="attach-chip">
+                        <Icon name="clipboard" size={13} /> {f.name} <small>{fmtSize(f.size)}</small>
+                        <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`}>
+                          <Icon name="x" size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {isTask ? (
+                  <Field label="Due date (optional)">
+                    <input className="input" type="datetime-local" value={v.due} onChange={(e) => setV({ ...v, due: e.target.value })} />
+                  </Field>
+                ) : null}
+                {msg ? msg.ok ? <div className="note"><Icon name="check" /><div>{msg.text}</div></div> : <ErrorNote message={msg.text} /> : null}
+                <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={() => void submit()} disabled={busy}>
+                  {busy ? 'Posting…' : isTask ? 'Post assignment' : 'Post announcement'}
+                </button>
+              </div>
+            )}
         </div>
         <div className="card">
           <CardHead title={isTask ? 'Posted assignments' : 'Posted announcements'} sub={`${list.length} total`} />
@@ -596,41 +617,53 @@ function PostsPage({ kind }: { kind: 'assignments' | 'announcements' }) {
           ) : list.length ? (
             <div className="list">
               {list.map((p) => (
-                <div key={p.id} className="list-item" style={{ alignItems: 'flex-start' }}>
-                  <span className="ic">
-                    <Icon name={isTask ? 'edit' : 'megaphone'} size={16} />
-                  </span>
-                  <div className="grow">
-                    <b>{p.title}</b>
-                    <small style={{ display: 'block' }}>{classLabel(clsOf(p.class_id))}</small>
-                    <small style={{ display: 'block', whiteSpace: 'pre-wrap' }}>{'description' in p ? p.description : p.message}</small>
-                    {'attachments' in p && p.attachments?.length ? (
-                      <div className="attach-list" style={{ marginTop: 6 }}>
-                        {p.attachments.map((a) => (
-                          <button
-                            key={a.path}
-                            type="button"
-                            className="attach-chip link-chip"
-                            onClick={async () => {
-                              try {
-                                window.open(await attachmentUrl(a), '_blank', 'noopener');
-                              } catch (e) {
-                                setMsg({ text: e instanceof Error ? e.message : String(e), ok: false });
-                              }
-                            }}>
-                            <Icon name="download" size={13} /> {a.name} <small>{fmtSize(a.size)}</small>
-                          </button>
-                        ))}
-                      </div>
+                <div key={p.id} className="post-entry">
+                  <div className="list-item" style={{ alignItems: 'flex-start' }}>
+                    <span className="ic">
+                      <Icon name={isTask ? 'edit' : 'megaphone'} size={16} />
+                    </span>
+                    <div className="grow">
+                      <b>{p.title}</b>
+                      <small style={{ display: 'block' }}>{classLabel(clsOf(p.class_id))}</small>
+                      <small style={{ display: 'block', whiteSpace: 'pre-wrap' }}>{'description' in p ? p.description : p.message}</small>
+                      {'attachments' in p && p.attachments?.length ? (
+                        <div className="attach-list" style={{ marginTop: 6 }}>
+                          {p.attachments.map((a) => (
+                            <button
+                              key={a.path}
+                              type="button"
+                              className="attach-chip link-chip"
+                              onClick={async () => {
+                                try {
+                                  window.open(await attachmentUrl(a), '_blank', 'noopener');
+                                } catch (e) {
+                                  setMsg({ text: e instanceof Error ? e.message : String(e), ok: false });
+                                }
+                              }}>
+                              <Icon name="download" size={13} /> {a.name} <small>{fmtSize(a.size)}</small>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                      <small style={{ display: 'block', color: 'var(--muted)' }}>
+                        Posted {fmtDateTime(p.created_at)}
+                        {'due_at' in p && p.due_at ? ` · Due ${fmtDateTime(p.due_at)}` : ''}
+                      </small>
+                    </div>
+                    {!isTask ? (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        aria-expanded={chatId === p.id}
+                        onClick={() => setChatId((current) => current === p.id ? null : p.id)}>
+                        {chatId === p.id ? 'Hide Messages' : 'Messages'}
+                      </button>
                     ) : null}
-                    <small style={{ display: 'block', color: 'var(--muted)' }}>
-                      Posted {fmtDateTime(p.created_at)}
-                      {'due_at' in p && p.due_at ? ` · Due ${fmtDateTime(p.due_at)}` : ''}
-                    </small>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setDel({ id: p.id, title: p.title, attachments: 'attachments' in p ? p.attachments : [] })} aria-label={`Delete ${p.title}`}>
+                      <Icon name="trash" size={14} />
+                    </button>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setDel({ id: p.id, title: p.title, attachments: 'attachments' in p ? p.attachments : [] })} aria-label={`Delete ${p.title}`}>
-                    <Icon name="trash" size={14} />
-                  </button>
+                  {!isTask && chatId === p.id ? <AnnouncementChat announcementId={p.id} /> : null}
                 </div>
               ))}
             </div>

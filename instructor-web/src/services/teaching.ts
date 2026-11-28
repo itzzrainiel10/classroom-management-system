@@ -56,6 +56,8 @@ export type KeyedQuestion = Question & { correct_index: number | null; answer: A
 export type Attachment = { path: string; name: string; size: number; type: string };
 export type Assignment = { id: string; class_id: string; title: string; description: string; due_at: string | null; created_at: string; attachments?: Attachment[] };
 export type Announcement = { id: string; class_id: string; title: string; message: string; created_at: string };
+export type AnnouncementMessage = { id: string; announcement_id: string; author_id: string; author_name: string; message: string; created_at: string; heart_count?: number; hearted_by_me?: boolean };
+export type AnnouncementMentionOption = { user_id: string; full_name: string };
 export type Student = { id: string; class_id: string; email: string; full_name: string };
 
 type Raw = Record<string, unknown>;
@@ -150,6 +152,64 @@ export async function fetchPosts(classIds: string[]) {
     supabase.from('announcements').select('*').in('class_id', classIds).order('created_at', { ascending: false }),
   ]);
   return { assignments: must(a) as Assignment[], announcements: must(n) as Announcement[] };
+}
+
+export async function fetchAnnouncementMessages(announcementId: string): Promise<AnnouncementMessage[]> {
+  const [messageResult, authResult, reactionResult] = await Promise.all([
+    supabase
+      .from('announcement_messages')
+      .select('id, announcement_id, author_id, author_name, message, created_at')
+      .eq('announcement_id', announcementId)
+      .order('created_at', { ascending: false })
+      .limit(100),
+    supabase.auth.getUser(),
+    supabase.from('announcement_message_reactions').select('message_id, user_id').eq('announcement_id', announcementId),
+  ]);
+  const rows = must(messageResult) as AnnouncementMessage[];
+  if (authResult.error) throw new Error(authResult.error.message);
+  const reactions = must(reactionResult) as { message_id: string; user_id: string }[];
+  const currentUserId = authResult.data.user?.id;
+  const counts = new Map<string, number>();
+  const mine = new Set<string>();
+  for (const reaction of reactions) {
+    counts.set(reaction.message_id, (counts.get(reaction.message_id) ?? 0) + 1);
+    if (reaction.user_id === currentUserId) mine.add(reaction.message_id);
+  }
+  return rows.reverse().map((row) => ({
+    ...row,
+    heart_count: counts.get(row.id) ?? 0,
+    hearted_by_me: mine.has(row.id),
+  }));
+}
+
+export async function toggleAnnouncementMessageHeart(announcementId: string, messageId: string, heartedByMe: boolean) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw new Error(error.message);
+  if (!data.user) throw new Error('Sign in to react to messages.');
+
+  const query = supabase.from('announcement_message_reactions');
+  if (heartedByMe) {
+    must(await query.delete().eq('announcement_id', announcementId).eq('message_id', messageId).eq('user_id', data.user.id).select('message_id'));
+    return;
+  }
+  must(await query.upsert(
+    { announcement_id: announcementId, message_id: messageId, user_id: data.user.id },
+    { onConflict: 'message_id,user_id', ignoreDuplicates: true },
+  ).select('message_id'));
+}
+
+export async function fetchAnnouncementMentionOptions(announcementId: string): Promise<AnnouncementMentionOption[]> {
+  return must(await supabase.rpc('announcement_mention_options', { _announcement_id: announcementId })) as AnnouncementMentionOption[];
+}
+
+export async function sendAnnouncementMessage(announcementId: string, message: string, mentionedUserIds: string[] = []): Promise<AnnouncementMessage> {
+  return must(
+    await supabase
+      .from('announcement_messages')
+      .insert({ announcement_id: announcementId, message: message.trim(), mentioned_user_ids: mentionedUserIds })
+      .select('id, announcement_id, author_id, author_name, message, created_at')
+      .single(),
+  ) as AnnouncementMessage;
 }
 
 export const MAX_FILE_MB = 25;
