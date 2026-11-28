@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeroBackdrop, HeroTopBar } from '@/components/hero';
 import { MenuRow } from '@/components/menu-row';
 import { TermBanner, termPhase, useTimetable, weeklyHours } from '@/components/official-schedule';
-import { RenewalCard } from '@/components/renewal-card';
+import { RenewalCardView, useRenewalState } from '@/components/renewal-card';
 import { SemesterEndedCard, useSemesterEnded } from '@/components/semester';
 import { UploadStatus } from '@/components/upload-status';
 import { Card, Label, OfflineNote, OnPrimary, Screen } from '@/components/ui';
@@ -18,10 +18,11 @@ import { useAuth } from '@/lib/auth';
 import { firstName, fmtToday, greetingFor } from '@/lib/format';
 
 export default function InstructorHome() {
-  const { fullName } = useAuth();
+  const { fullName, loginProvider } = useAuth();
   // Between semesters Home shows only the semester-ended card (and renewal), nothing else.
   const ended = useSemesterEnded();
   const { data, offline, savedAt, refresh } = useClasses();
+  const renewal = useRenewalState();
   const classes = data ?? [];
   const timetable = useTimetable();
   const official = termPhase(timetable.data?.term) === 'ended' ? [] : (timetable.data?.classes ?? []);
@@ -31,6 +32,30 @@ export default function InstructorHome() {
   const extra = useRemote('schedules', fetchSchedules, mergeSchedules).data ?? [];
   const classCount = official.length + extra.length;
   const totals = classes.reduce((t, c) => ({ students: t.students + c.students, assignments: t.assignments + c.assignments }), { students: 0, assignments: 0 });
+  const onlyRenewal = loginProvider === 'google' && ((renewal.loading && !renewal.data) || Boolean(renewal.data?.open && !renewal.data.renewal));
+
+  if (onlyRenewal) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
+        <Screen onRefresh={renewal.refresh}>
+          <View style={styles.hero}>
+            <HeroBackdrop />
+            <HeroTopBar role="Instructor" onSettings={() => router.push('/settings')} onBell={() => router.push('/instructor/notifications')} />
+            <OnPrimary size="lg">Confirm your teaching status</OnPrimary>
+            <OnPrimary>Submit your renewal to access your dashboard.</OnPrimary>
+          </View>
+          {renewal.data ? (
+            <RenewalCardView role="instructor" data={renewal.data} />
+          ) : (
+            <Card style={{ gap: 8 }}>
+              <Label>Checking your renewal</Label>
+              <Text style={{ color: colors.textSoft, fontSize: 13 }}>Loading your semester renewal status.</Text>
+            </Card>
+          )}
+        </Screen>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
@@ -57,7 +82,7 @@ export default function InstructorHome() {
         <OfflineNote show={offline} savedAt={savedAt} />
         <UploadStatus />
         <SemesterEndedCard role="instructor" />
-        <RenewalCard role="instructor" />
+        <RenewalCardView role="instructor" data={renewal.data} />
         {ended ? null : (
           <>
 

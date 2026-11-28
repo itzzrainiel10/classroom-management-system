@@ -16,6 +16,7 @@ type AuthValue = {
   email: string | null;
   fullName: string;
   role: Role | null;
+  loginProvider: 'google' | 'password' | null;
   /** Set while an instructor application waits for (or was refused) admin approval. */
   application: Application | null;
   /** Reloads role / application status from the server (e.g. after an admin approves). */
@@ -31,6 +32,13 @@ type AuthValue = {
 const AuthContext = createContext<AuthValue | null>(null);
 const roleKey = (uid: string) => `cms.role.${uid}`;
 const nameKey = (uid: string) => `cms.name.${uid}`;
+const loginProviderKey = (uid: string) => `cms.login-provider.${uid}`;
+
+function storedLoginProvider(session: Session): AuthValue['loginProvider'] {
+  const saved = localStorage.getItem(loginProviderKey(session.user.id));
+  if (saved === 'google' || saved === 'password') return saved;
+  return session.user.app_metadata?.provider === 'google' ? 'google' : null;
+}
 
 /** Role picked on the sign-in screen while a Google sign-in is in progress (new Google accounts have no role yet). */
 let pendingGoogleRole: Role | null = null;
@@ -163,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
   const [fullName, setFullName] = useState('');
+  const [loginProvider, setLoginProvider] = useState<AuthValue['loginProvider']>(null);
   const [ready, setReady] = useState(false);
   const sessionRef = useRef<Session | null>(null);
 
@@ -180,10 +189,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let alive = true;
     const apply = async (s: Session | null) => {
+      const previousSession = sessionRef.current;
       setSession(s);
       sessionRef.current = s;
       setCacheScope(s?.user.id ?? null);
       if (s) {
+        setLoginProvider(storedLoginProvider(s));
         const a = await loadAccount(s);
         if (!alive) return;
         if (a.blocked) {
@@ -193,6 +204,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         applyAccount(a);
       } else {
+        if (previousSession) localStorage.removeItem(loginProviderKey(previousSession.user.id));
+        setLoginProvider(null);
         applyAccount({ role: null, application: null, name: '' });
       }
       if (alive) setReady(true);
@@ -254,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: session?.user.email ?? null,
     fullName,
     role,
+    loginProvider,
     application,
     async refreshAccount() {
       const s = sessionRef.current;
@@ -270,6 +284,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) return 'The app is not connected to the server.';
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) return error.message === 'Invalid login credentials' ? 'Wrong email or password.' : error.message;
+      localStorage.setItem(loginProviderKey(data.session.user.id), 'password');
+      setLoginProvider('password');
       return afterSignIn(await loadAccount(data.session), expectedRole, false);
     },
     async signUp(email, password, name, newRole, details) {
@@ -327,6 +343,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const exchanged = await supabase.auth.exchangeCodeForSession(code);
         if (exchanged.error) return exchanged.error.message;
+        localStorage.setItem(loginProviderKey(exchanged.data.session.user.id), 'google');
+        setLoginProvider('google');
         return afterSignIn(await loadAccount(exchanged.data.session), expectedRole, true);
       } finally {
         pendingGoogleRole = null;
@@ -334,6 +352,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async signOut() {
       if (supabase) await supabase.auth.signOut();
+      const uid = sessionRef.current?.user.id;
+      if (uid) localStorage.removeItem(loginProviderKey(uid));
+      setLoginProvider(null);
     },
   };
 

@@ -6,8 +6,7 @@ import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, ErrorNote, Field, Modal, PageHeader, Person, Tile } from '../components/ui';
 import { createInstructor, deleteInstructor, saveInstructor, tempPassword } from '../services/instructors';
-import { PhoneInput } from '../components/phone';
-import { phStored, phValid } from '../services/phone';
+import { phStored } from '../services/phone';
 import { rolesOf, type InstructorProfile, type Profile } from '../services/data';
 import { fmtNum, minutesOf } from '../services/format';
 
@@ -85,7 +84,6 @@ export default function Instructors() {
                   <tr>
                     <th>Instructor</th>
                     <th>Employee ID · Department</th>
-                    <th>Contact</th>
                     <th className="num">Subjects</th>
                     <th>Sections</th>
                     <th className="num">Hours / week</th>
@@ -104,7 +102,6 @@ export default function Instructors() {
                         <b style={{ whiteSpace: 'nowrap' }}>{r.ip?.employee_id || '—'}</b>
                         <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{r.ip?.department || '—'}</div>
                       </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{r.ip?.contact_number || '—'}</td>
                       <td className="num">{r.subjects}</td>
                       <td style={{ maxWidth: 180 }}>{r.sections.join(', ') || '—'}</td>
                       <td className="num">{r.hours}</td>
@@ -205,7 +202,6 @@ function InstructorForm({
     if (adding && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) return setErr('Enter a valid email address.');
     if (adding && (v.password.length < 8 || !/[a-z]/i.test(v.password) || !/[0-9]/.test(v.password)))
       return setErr('The password needs at least 8 characters with letters and numbers.');
-    if (v.contact_number && !phValid(v.contact_number)) return setErr('Enter a Philippine mobile number: 10 digits after +63, starting with 9 (e.g. 917 123 4567).');
     setBusy(true);
     setErr(null);
     try {
@@ -260,9 +256,6 @@ function InstructorForm({
       <div className="form-grid">
         <Field label="Employee / faculty ID">
           <input className="input" value={v.employee_id} onChange={(e) => set('employee_id', e.target.value)} placeholder="CvSU-2019-0142" />
-        </Field>
-        <Field label="Contact number">
-          <PhoneInput value={v.contact_number} onChange={(t) => set('contact_number', t)} />
         </Field>
       </div>
       <Field label="Department">

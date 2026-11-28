@@ -238,10 +238,6 @@ function ReviewDialog({ app, onClose }: { app: InstructorProfile; onClose: () =>
           <b>{app.department || '—'}</b>
         </div>
         <div>
-          <small>Contact number</small>
-          <b>{app.contact_number || '—'}</b>
-        </div>
-        <div>
           <small>Proof of identity</small>
           {app.proof_path ? (
             <button className="link" onClick={() => void openProof()}>

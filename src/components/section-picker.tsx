@@ -108,6 +108,50 @@ export function SectionDropdown({ sections, value, onChange }: { sections: Secti
   );
 }
 
+/** A section-only dropdown for forms that already collect year level separately. */
+export function SectionSelect({ sections, value, onChange }: { sections: SectionOption[]; value: string | null; onChange: (id: string) => void }) {
+  const selected = sections.find((s) => s.id === value);
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={selected ? `Section: ${selected.name}` : 'Select a section'}
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((v) => !v)}
+        style={styles.dropdownTrigger}>
+        <Text style={[styles.dropdownValue, !selected && styles.dropdownPlaceholder]}>{selected?.name ?? 'Select a section'}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSoft} />
+      </Pressable>
+      {open ? (
+        <ScrollView style={styles.dropdownList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+          {sections.map((s) => {
+            const active = s.id === value;
+            return (
+              <Pressable
+                key={s.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                onPress={() => {
+                  onChange(s.id);
+                  setOpen(false);
+                }}
+                style={[styles.dropdownOption, active && styles.dropdownOptionActive]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.dropdownName}>{s.name}</Text>
+                  {s.program ? <Text style={styles.dropdownDetail}>{s.program}</Text> : null}
+                </View>
+                {active ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+    </View>
+  );
+}
+
 /** Sections grouped by year level, as tappable chips. */
 export function SectionPicker({ sections, value, onChange }: { sections: SectionOption[]; value: string | null; onChange: (id: string) => void }) {
   const years = [...new Set(sections.map((s) => s.year_level))].sort();

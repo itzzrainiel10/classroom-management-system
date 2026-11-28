@@ -134,7 +134,6 @@ export default function Renewals({ embedded = false, initialKind = 'student' }: 
                         <tr>
                           <th>Instructor</th>
                           <th>Employee ID · Department</th>
-                          <th>Contact</th>
                           <th>Submitted</th>
                           <th>Status</th>
                           <th className="num" aria-label="Actions" />
@@ -170,7 +169,6 @@ export default function Renewals({ embedded = false, initialKind = 'student' }: 
                                   <b>{row.r?.details.employee_id || ip?.employee_id || '—'}</b>
                                   <div style={{ color: 'var(--text-soft)', fontSize: 'calc(12.5px * var(--text-scale))' }}>{row.r?.details.department || ip?.department || '—'}</div>
                                 </td>
-                                <td>{row.r?.details.contact_number || ip?.contact_number || '—'}</td>
                               </>
                             )}
                             <td>{submittedOf(row) ? fmtDateTime(submittedOf(row)) : '—'}</td>
@@ -355,7 +353,7 @@ function ReviewDialog({
       {row.app ? (
         <div className="note" style={{ marginBottom: 12 }}>
           <div>
-            <b>New instructor applicant.</b> Employee ID {row.app.employee_id || '—'} · {row.app.department || 'No department'} · {row.app.contact_number || 'No contact number'}
+            <b>New instructor applicant.</b> Employee ID {row.app.employee_id || '—'} · {row.app.department || 'No department'}
             {row.app.proof_path ? (
               <>
                 {' · '}

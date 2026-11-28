@@ -5,12 +5,20 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, Caption, Card, H2 } from '@/components/ui';
 import { colors, radius, themed } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
-import { fetchMyRenewal } from '@/lib/renewal';
+import { fetchMyRenewal, type RenewalState } from '@/lib/renewal';
 import { fmtDate } from '@/lib/format';
 
 /** Home-screen card: renew for the active semester, or see where the request stands. Hidden once approved. */
 export function RenewalCard({ role }: { role: 'student' | 'instructor' }) {
-  const { data } = useRemote('my-renewal', fetchMyRenewal);
+  const { data } = useRenewalState();
+  return <RenewalCardView role={role} data={data} />;
+}
+
+export function useRenewalState() {
+  return useRemote('my-renewal', fetchMyRenewal);
+}
+
+export function RenewalCardView({ role, data }: { role: 'student' | 'instructor'; data: RenewalState | undefined }) {
   if (!data?.open || data.renewal?.status === 'approved') return null;
   const r = data.renewal;
   const term = data.label;

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HeroBackdrop, HeroTopBar } from '@/components/hero';
 import { MenuRow } from '@/components/menu-row';
-import { RenewalCard } from '@/components/renewal-card';
+import { RenewalCardView, useRenewalState } from '@/components/renewal-card';
 import { SemesterEndedCard, useSemesterEnded } from '@/components/semester';
 import { OfficialClassCard, TermBanner, inSession, termPhase, useTimetable } from '@/components/official-schedule';
 import { UploadStatus } from '@/components/upload-status';
@@ -15,10 +15,11 @@ import { useAuth } from '@/lib/auth';
 import { firstName, fmtDate } from '@/lib/format';
 
 export default function StudentHome() {
-  const { fullName } = useAuth();
+  const { fullName, loginProvider } = useAuth();
   // Between semesters Home shows only the semester-ended card (and renewal), nothing else.
   const ended = useSemesterEnded();
   const { data, offline, savedAt, refresh } = useStudentHome();
+  const renewal = useRenewalState();
   const quizzes = data?.quizzes ?? [];
   const timetable = useTimetable();
   const today = ((new Date().getDay() + 6) % 7) + 1;
@@ -27,6 +28,30 @@ export default function StudentHome() {
   const done = quizzes.filter((q) => q.attempts.length > 0).length;
   const progress = quizzes.length ? done / quizzes.length : 0;
   const next = quizzes.filter((q) => q.attempts.length === 0).sort((a, b) => (a.due_at ?? '9').localeCompare(b.due_at ?? '9'))[0];
+  const onlyRenewal = loginProvider === 'google' && ((renewal.loading && !renewal.data) || Boolean(renewal.data?.open && !renewal.data.renewal));
+
+  if (onlyRenewal) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
+        <Screen onRefresh={renewal.refresh}>
+          <View style={styles.hero}>
+            <HeroBackdrop />
+            <HeroTopBar role="Student" onSettings={() => router.push('/settings')} onBell={() => router.push('/student/notifications')} />
+            <OnPrimary size="lg">Renew your enrollment</OnPrimary>
+            <OnPrimary>Complete your renewal to access your dashboard.</OnPrimary>
+          </View>
+          {renewal.data ? (
+            <RenewalCardView role="student" data={renewal.data} />
+          ) : (
+            <Card style={{ gap: 8 }}>
+              <Label>Checking your renewal</Label>
+              <Caption>Loading your semester renewal status.</Caption>
+            </Card>
+          )}
+        </Screen>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }} edges={['top']}>
@@ -54,7 +79,7 @@ export default function StudentHome() {
         <UploadStatus />
 
         <SemesterEndedCard role="student" />
-        <RenewalCard role="student" />
+        <RenewalCardView role="student" data={renewal.data} />
         {ended ? null : (
           <>
         <Card style={{ gap: 10 }}>

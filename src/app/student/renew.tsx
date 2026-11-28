@@ -1,14 +1,32 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ReviewModal } from '@/components/review-modal';
-import { SectionPicker, useSections } from '@/components/section-picker';
+import { SectionSelect, useSections } from '@/components/section-picker';
 import { Button, Caption, Card, Field, H2, Label, Loading, Screen, Segmented } from '@/components/ui';
 import { colors } from '@/constants/theme';
 import { useRemote } from '@/hooks/use-remote';
 import { fetchMyRenewal, submitRenewal } from '@/lib/renewal';
+
+const PROGRAM_OPTIONS = [
+  { label: 'Bachelor of Science in Information Technology', aliases: ['bsit', 'information technology'] },
+  { label: 'Bachelor of Science in Computer Science', aliases: ['bscs', 'computer science'] },
+] as const;
+
+const normalizeProgram = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function canonicalProgram(value: string) {
+  const normalized = normalizeProgram(value);
+  return PROGRAM_OPTIONS.find((option) => [option.label, ...option.aliases].some((alias) => normalizeProgram(alias) === normalized))?.label ?? '';
+}
+
+function matchesProgram(selected: string, sectionProgram: string) {
+  const option = PROGRAM_OPTIONS.find((candidate) => candidate.label === selected);
+  const normalized = normalizeProgram(sectionProgram);
+  return [option?.label ?? selected, ...(option?.aliases ?? [])].some((alias) => normalizeProgram(alias) === normalized);
+}
 
 /** Student → Renew Enrollment for the active semester (an administrator approves it). */
 export default function StudentRenew() {
@@ -22,6 +40,7 @@ export default function StudentRenew() {
   const [err, setErr] = useState<string | null>(null);
   const [filled, setFilled] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [programOpen, setProgramOpen] = useState(false);
 
   // Start from what we already know (last request or profile).
   useEffect(() => {
@@ -30,7 +49,7 @@ export default function StudentRenew() {
     setV({
       full_name: data.profile?.full_name ?? '',
       student_number: r?.details.student_number || data.profile?.student_number || '',
-      program: r?.program ?? '',
+      program: canonicalProgram(r?.program ?? ''),
       contact_number: r?.details.contact_number ?? '',
     });
     if (r?.year_level) setYear(r.year_level);
@@ -38,8 +57,7 @@ export default function StudentRenew() {
     setFilled(true);
   }, [data, filled]);
 
-  const programs = [...new Set((sections ?? []).map((s) => s.program).filter(Boolean))] as string[];
-  const forYear = (sections ?? []).filter((s) => s.year_level === year && (!v.program || !s.program || s.program.toLowerCase() === v.program.trim().toLowerCase()));
+  const forYear = (sections ?? []).filter((s) => s.year_level === year && (!v.program || !s.program || matchesProgram(v.program, s.program)));
 
   /** First step: check the form, then show every detail for review. */
   const review = () => {
@@ -107,20 +125,41 @@ export default function StudentRenew() {
 
         <Label>Enrollment details</Label>
         <Card style={{ gap: 14 }}>
-          <Field label="Course / program" value={v.program} onChangeText={(t) => setV({ ...v, program: t })} placeholder="e.g. BSIT" autoCapitalize="characters" />
-          {programs.length ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -6 }}>
-              {programs.map((p) => (
-                <Pressable key={p} onPress={() => setV({ ...v, program: p })} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: colors.primarySoft }}>
-                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12.5 }}>{p}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Course / program</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={v.program || 'Select course or program'}
+            accessibilityState={{ expanded: programOpen }}
+            onPress={() => setProgramOpen((open) => !open)}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 50, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card }}>
+            <Text style={{ flex: 1, color: v.program ? colors.text : colors.muted, fontSize: 15, fontWeight: '600' }}>
+              {v.program || 'Select course / program'}
+            </Text>
+            <Ionicons name={programOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSoft} />
+          </Pressable>
+          {programOpen ? (
+            <ScrollView style={{ maxHeight: 180, marginTop: -8, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+              {PROGRAM_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.label}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: v.program === option.label }}
+                  onPress={() => {
+                    setV({ ...v, program: option.label });
+                    setSection(null);
+                    setProgramOpen(false);
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+                  <Text style={{ flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' }}>{option.label}</Text>
+                  {v.program === option.label ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           ) : null}
           <View style={{ gap: 6 }}>
             <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Year level</Text>
             <Segmented<number>
-              options={[1, 2, 3, 4, 5].map((y) => ({ label: `${y}`, value: y }))}
+              options={[1, 2, 3, 4].map((y) => ({ label: `${y}`, value: y }))}
               value={year}
               onChange={(y) => {
                 setYear(y);
@@ -131,7 +170,7 @@ export default function StudentRenew() {
           <View style={{ gap: 6 }}>
             <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Your section</Text>
             {forYear.length ? (
-              <SectionPicker sections={forYear} value={section} onChange={setSection} />
+              <SectionSelect sections={forYear} value={section} onChange={setSection} />
             ) : (
               <Caption>No sections for year {year} yet. Check again later, or pick another year level.</Caption>
             )}
