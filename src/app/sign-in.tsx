@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Caption, Card, Field, Label } from '@/components/ui';
 import { colors, radius, shadow, text, themed } from '@/constants/theme';
-import { SectionPicker, useSections } from '@/components/section-picker';
+import { SectionDropdown, useSections } from '@/components/section-picker';
 import { useAuth, type Role } from '@/lib/auth';
 
 const SEAL = require('../../assets/images/splash-icon.png');
@@ -48,7 +48,10 @@ export default function SignIn() {
     if (err) {
       const ok = err.startsWith('Account created') || err.startsWith('Application created');
       setMessage({ text: err, ok });
-      if (ok) setMode('in');
+      if (ok) {
+        setMode('in');
+        router.replace({ pathname: '/sign-in', params: { role } });
+      }
     }
   };
 
@@ -90,7 +93,7 @@ export default function SignIn() {
             {mode === 'up' && role === 'student' && sections?.length ? (
               <View style={{ gap: 8 }}>
                 <Text style={styles.fieldLabel}>Your section</Text>
-                <SectionPicker sections={sections} value={sectionId} onChange={setSectionId} />
+                <SectionDropdown sections={sections} value={sectionId} onChange={setSectionId} />
                 <Text style={styles.hint}>You’ll see this section’s class schedule. Only an administrator can change it later.</Text>
               </View>
             ) : null}

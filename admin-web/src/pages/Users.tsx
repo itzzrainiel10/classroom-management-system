@@ -4,8 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
 import { useWorkspace } from '../layouts/AdminLayout';
-import { Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
-import { cancelInvitation, classLabel, inviteUser, userRows } from '../services/data';
+import { Confirm, Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
+import { cancelInvitation, classLabel, deleteUser, inviteUser, userRows, type UserRow } from '../services/data';
 import { fmtNum } from '../services/format';
 
 type Tab = 'all' | 'instructor' | 'student';
@@ -20,6 +20,8 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
   const [q, setQ] = useState(params.get('q') ?? '');
   const [inviting, setInviting] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<(UserRow & { id: string; currentClasses: number }) | null>(null);
+  const [deleted, setDeleted] = useState<string | null>(null);
 
   useEffect(() => setQ(params.get('q') ?? ''), [params]);
 
@@ -111,9 +113,30 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
                     </td>
                     <td className="num">
                       {u.id ? (
-                        <Link to={`/admin/users/${u.id}`} className="btn btn-secondary btn-sm">
-                          Edit
-                        </Link>
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: 6, flexWrap: 'nowrap' }}>
+                          <Link
+                            to={`/admin/users/${u.id}`}
+                            className="btn btn-secondary btn-sm"
+                            aria-label={`Edit ${u.name}`}
+                            title={`Edit ${u.name}`}>
+                            <Icon name="edit" size={14} />
+                          </Link>
+                          {!u.isAdmin ? (
+                            <button
+                              className="btn btn-danger btn-sm"
+                              aria-label={`Delete ${u.name}`}
+                              title={`Delete ${u.name}`}
+                              onClick={() =>
+                                setDeleting({
+                                  ...u,
+                                  id: u.id!,
+                                  currentClasses: w.classes.filter((c) => c.instructor_id === u.id).length,
+                                })
+                              }>
+                              <Icon name="trash" size={14} />
+                            </button>
+                          ) : null}
+                        </div>
                       ) : (
                         <button
                           className="btn btn-ghost btn-sm"
@@ -150,6 +173,26 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
       {done ? (
         <Success title="Invitation saved" body={`${done} gets this role (and class) as soon as they sign up in the CvSU CMS app with this email.`} onDone={() => setDone(null)} />
       ) : null}
+      {deleting ? (
+        <Confirm
+          title={`Delete ${deleting.name}?`}
+          body={`This permanently removes their account and login. ${
+            deleting.role === 'instructor'
+              ? `Their ${deleting.currentClasses} current class(es) and everything in them will also be removed; archived semesters keep their records.`
+              : 'Existing class and assessment records may remain in reports.'
+          } This cannot be undone.`}
+          confirmLabel="Delete user"
+          danger
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            const result = await deleteUser(deleting.id);
+            setDeleting(null);
+            await refresh();
+            setDeleted(result.name);
+          }}
+        />
+      ) : null}
+      {deleted ? <Success title="User deleted" body={`${deleted}’s account has been removed.`} onDone={() => setDeleted(null)} /> : null}
     </>
   );
 }

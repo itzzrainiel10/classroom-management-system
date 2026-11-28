@@ -249,6 +249,10 @@ export async function cancelInvitation(email: string) {
   must(await supabase.from('invitations').delete().eq('email', email).select('email'));
 }
 
+export async function deleteUser(id: string) {
+  return must(await supabase.rpc('admin_delete_user', { _user_id: id })) as { name: string; classes_removed: number };
+}
+
 export async function updateClass(id: string, patch: Partial<Pick<ClassRow, 'section' | 'instructor_id' | 'title' | 'code'>>) {
   must(await supabase.from('classes').update(patch).eq('id', id).select('id'));
 }

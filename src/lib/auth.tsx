@@ -289,8 +289,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) return error.message;
-      // Email confirmation is off: sign-up returns a session and the user goes straight in.
-      if (data.session) return null;
+      if (data.session) {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) return `Could not return to login after creating the account: ${signOutError.message}`;
+        return newRole === 'instructor'
+          ? 'Application created! You can now log in as Instructor to upload proof and follow its status. An administrator must approve it first.'
+          : 'Account created! You can now log in.';
+      }
       return newRole === 'instructor'
         ? 'Application created! Confirm your email, then log in as Instructor to upload proof and follow its status. An administrator must approve it first.'
         : 'Account created! Check your email for the confirmation link, then log in.';

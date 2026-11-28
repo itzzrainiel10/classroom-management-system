@@ -21,7 +21,6 @@ export function useWorkspace() {
 type NavItem = { to: string; label: string; icon: IconName; group: string; /** other paths that belong to this item */ also?: string[] };
 const NAV: NavItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'home', group: '' },
-  { to: '/admin/users', label: 'Users', icon: 'users', group: 'People' },
   { to: '/admin/instructor-verification', label: 'Applications & Renewals', icon: 'shield', group: 'People', also: ['/admin/renewals'] },
   { to: '/admin/instructors', label: 'Instructors', icon: 'school', group: 'People' },
   { to: '/admin/students', label: 'Students', icon: 'user', group: 'People' },
