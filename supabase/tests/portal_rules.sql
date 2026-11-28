@@ -45,6 +45,12 @@ BEGIN
     msg := msg || format('7 own account status stays %s %s; ', s, CASE WHEN s = 'active' THEN 'ok' ELSE 'BAD' END);
   EXCEPTION WHEN others THEN msg := msg || '7 own status blocked ok; '; END;
 
+  BEGIN
+    UPDATE public.profiles SET is_inactive = true WHERE id = inst;
+    SELECT is_inactive INTO b FROM public.profiles WHERE id = inst;
+    msg := msg || format('7b self inactive label=%s %s; ', b, CASE WHEN NOT b THEN 'ok' ELSE 'BAD' END);
+  EXCEPTION WHEN others THEN msg := msg || '7b self inactive label blocked ok; '; END;
+
   IF sch.id IS NOT NULL THEN
     BEGIN
       UPDATE public.instructor_schedules SET room_id = room_id WHERE id = sch.id;
@@ -90,10 +96,17 @@ BEGIN
   BEGIN PERFORM public.set_instructor_suspension(inst, true, ''); msg := msg || '18 suspend without reason ALLOWED BAD; ';
   EXCEPTION WHEN others THEN msg := msg || '18 suspend needs reason ok; '; END;
 
+  UPDATE public.profiles SET is_inactive = true WHERE id = inst;
+  SELECT is_inactive, status INTO b, s FROM public.profiles WHERE id = inst;
+  msg := msg || format('19 admin sets inactive label=%s profile status=%s %s; ', b, s, CASE WHEN b AND s = 'active' THEN 'ok' ELSE 'BAD' END);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', inst, 'role', 'authenticated')::text, true);
+  SELECT public.is_active_user() AND public.is_approved_instructor(inst) INTO b;
+  msg := msg || format('20 inactive label preserves instructor access=%s %s; ', b, CASE WHEN b THEN 'ok' ELSE 'BAD' END);
+
   /* ---------- student cannot do admin work either ---------- */
   PERFORM set_config('request.jwt.claims', json_build_object('sub', stu, 'role', 'authenticated')::text, true);
-  BEGIN PERFORM public.review_instructor(inst, false, 'x'); msg := msg || '19 student reviews ALLOWED BAD';
-  EXCEPTION WHEN others THEN msg := msg || '19 student reviews blocked ok'; END;
+  BEGIN PERFORM public.review_instructor(inst, false, 'x'); msg := msg || '21 student reviews ALLOWED BAD';
+  EXCEPTION WHEN others THEN msg := msg || '21 student reviews blocked ok'; END;
 
   RAISE EXCEPTION 'RESULT: %', msg;
 END $$;

@@ -8,7 +8,6 @@ import { AdminLayout } from './layouts/AdminLayout';
 import ActivityLog from './pages/Activity';
 import { ResetPassword, SignIn } from './pages/Auth';
 import Classes from './pages/Classes';
-import EditUser from './pages/EditUser';
 import Instructors from './pages/Instructors';
 import Overview from './pages/Overview';
 import Reports from './pages/Reports';
@@ -64,7 +63,7 @@ createRoot(document.getElementById('root')!).render(
             }>
             <Route path="/admin/dashboard" element={<Overview />} />
             <Route path="/admin/users" element={<Users />} />
-            <Route path="/admin/users/:id" element={<EditUser />} />
+            <Route path="/admin/users/:id" element={<Users />} />
             <Route path="/admin/students" element={<Users only="student" />} />
             <Route path="/admin/instructor-verification" element={<Approvals />} />
             <Route path="/admin/instructors" element={<Instructors />} />

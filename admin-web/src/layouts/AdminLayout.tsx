@@ -58,11 +58,12 @@ export function AdminLayout() {
       }
       return !c;
     });
-  const group = NAV.find((n) => location.pathname.startsWith(n.to) || !!n.also?.some((p) => location.pathname.startsWith(p)))?.group ?? '';
+  const editingUser = location.pathname.startsWith('/admin/users/');
+  const group = NAV.find((n) => location.pathname.startsWith(n.to) || !!n.also?.some((p) => location.pathname.startsWith(p)))?.group ?? (editingUser ? 'People' : '');
   const [q, setQ] = useState('');
   const navigate = useNavigate();
   const inItem = (n: NavItem) => location.pathname.startsWith(n.to) || !!n.also?.some((p) => location.pathname.startsWith(p));
-  const current = NAV.find(inItem)?.label ?? 'Dashboard';
+  const current = NAV.find(inItem)?.label ?? (editingUser ? 'Edit user' : 'Dashboard');
   const applicants = data?.instructorProfiles.filter((x) => x.status === 'pending').length ?? 0;
   const badge: Record<string, number> = { '/admin/instructor-verification': applicants };
   const pending = data?.instructorProfiles.filter((x) => x.status === 'pending').sort((a, b) => b.submitted_at.localeCompare(a.submitted_at)) ?? [];

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { Icon } from '../components/icons';
 import { Pager, usePaged } from '../components/pager';
@@ -7,12 +7,14 @@ import { useWorkspace } from '../layouts/AdminLayout';
 import { Confirm, Empty, Field, Modal, PageHeader, Person, RoleChip, StatusBadge, Success } from '../components/ui';
 import { cancelInvitation, classLabel, deleteUser, inviteUser, userRows, type UserRow } from '../services/data';
 import { fmtNum } from '../services/format';
+import EditUser from './EditUser';
 
 type Tab = 'all' | 'instructor' | 'student';
 
 /** All users, or (Student Management) only one role when `only` is set. */
 export default function Users({ only }: { only?: 'student' | 'instructor' } = {}) {
   const { w, refresh } = useWorkspace();
+  const { id: editId } = useParams();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>(only ?? 'all');
@@ -193,6 +195,7 @@ export default function Users({ only }: { only?: 'student' | 'instructor' } = {}
         />
       ) : null}
       {deleted ? <Success title="User deleted" body={`${deleted}’s account has been removed.`} onDone={() => setDeleted(null)} /> : null}
+      {editId ? <EditUser key={editId} id={editId} onClose={() => navigate('/admin/users')} /> : null}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 /* ---------- Types ---------- */
 
 export type Role = 'admin' | 'instructor' | 'student';
-export type Profile = { id: string; full_name: string; email: string; student_number: string; status: 'active' | 'suspended'; suspension_reason?: string; section_id: string | null; created_at: string };
+export type Profile = { id: string; full_name: string; email: string; student_number: string; status: 'active' | 'suspended'; is_inactive: boolean; suspension_reason?: string; section_id: string | null; created_at: string };
 export type AppStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type InstructorProfile = {
   user_id: string;
@@ -78,7 +78,7 @@ export type UserRow = {
   role: Role | 'none';
   isAdmin: boolean;
   section: string;
-  status: 'Active' | 'Suspended' | 'Invited';
+  status: 'Active' | 'Inactive' | 'Suspended' | 'Invited';
   /** Instructor application not yet approved. */
   application: AppStatus | null;
   student_number: string;
@@ -116,7 +116,7 @@ export type Workspace = {
 
 export async function fetchWorkspace(): Promise<Workspace> {
   const [profiles, roles, invitations, classes, enrollments, quizzes, attempts, assignments, ip, subjects, sections, rooms, settings, schedules] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, email, student_number, status, section_id, created_at').order('full_name'),
+    supabase.from('profiles').select('id, full_name, email, student_number, status, is_inactive, section_id, created_at').order('full_name'),
     supabase.from('user_roles').select('user_id, role'),
     supabase.from('invitations').select('*').order('created_at', { ascending: false }),
     // Classes of ended semesters are archived (see Semesters); the live pages show current classes only.
@@ -181,7 +181,7 @@ export function userRows(w: Workspace): UserRow[] {
       role,
       isAdmin: roles.includes('admin'),
       section: section || '—',
-      status: p.status === 'suspended' ? 'Suspended' : 'Active',
+      status: p.status === 'suspended' ? 'Suspended' : p.is_inactive ? 'Inactive' : 'Active',
       application: app && (app.status === 'suspended' || (app.status !== 'approved' && role !== 'instructor')) ? app.status : null,
       student_number: p.student_number,
       created_at: p.created_at,
@@ -227,8 +227,20 @@ export function studentScore(w: Workspace, classId: string, email: string) {
 
 /* ---------- Writes ---------- */
 
-export async function updateUser(id: string, patch: { full_name: string; student_number: string; status: 'active' | 'suspended'; suspension_reason: string }) {
-  must(await supabase.from('profiles').update(patch).eq('id', id).select('id'));
+export async function updateUser(id: string, patch: { full_name: string; student_number: string; status: 'active' | 'inactive' | 'suspended'; suspension_reason: string }) {
+  must(
+    await supabase
+      .from('profiles')
+      .update({
+        full_name: patch.full_name,
+        student_number: patch.student_number,
+        status: patch.status === 'suspended' ? 'suspended' : 'active',
+        is_inactive: patch.status === 'inactive',
+        suspension_reason: patch.suspension_reason,
+      })
+      .eq('id', id)
+      .select('id'),
+  );
 }
 
 export async function setRole(id: string, role: 'instructor' | 'student') {
